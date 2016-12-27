@@ -123,7 +123,7 @@ func (s *Scanner) peek() rune {
 func (s *Scanner) Scan() token.Token {
 	ch := s.next()
 
-	// skip white space
+	// TODO: don't skip whitespace
 	for isWhitespace(ch) {
 		ch = s.next()
 	}
@@ -157,6 +157,9 @@ func (s *Scanner) Scan() token.Token {
 		}
 	case isDecimal(ch):
 		tok = s.scanNumber(ch)
+	case isCommentStart(ch):
+		tok = token.COMMENT
+		s.scanComment(ch)
 	default:
 		switch ch {
 		case eof:
@@ -164,7 +167,7 @@ func (s *Scanner) Scan() token.Token {
 		case '"':
 			tok = token.STRING
 			s.scanString()
-		case '#', '/':
+		case ';', '#', '%', '|':
 			tok = token.COMMENT
 			s.scanComment(ch)
 		case '.':
@@ -177,6 +180,8 @@ func (s *Scanner) Scan() token.Token {
 			}
 		case '(':
 			tok = token.LPAREN
+			// should enter in the context of an expression here.. so MUL and ADD, SUB, DIV
+			// would all apply in context..
 		case ')':
 			tok = token.RPAREN
 		case '[':
@@ -193,6 +198,10 @@ func (s *Scanner) Scan() token.Token {
 			tok = token.ASSIGN
 		case '+':
 			tok = token.ADD
+		case '*':
+			tok = token.MUL
+		case '/':
+			tok = token.DIV
 		case '-':
 			if isDecimal(s.peek()) {
 				ch := s.next()
@@ -224,41 +233,12 @@ func (s *Scanner) Scan() token.Token {
 
 func (s *Scanner) scanComment(ch rune) {
 	// single line comments
-	if ch == '#' || (ch == '/' && s.peek() != '*') {
-		if ch == '/' && s.peek() != '/' {
-			s.err("expected '/' for comment")
-			return
-		}
-
+	ch = s.next()
+	for ch != '\n' && ch >= 0 && ch != eof {
 		ch = s.next()
-		for ch != '\n' && ch >= 0 && ch != eof {
-			ch = s.next()
-		}
-		if ch != eof && ch >= 0 {
-			s.unread()
-		}
-		return
 	}
-
-	// be sure we get the character after /* This allows us to find comment's
-	// that are not erminated
-	if ch == '/' {
-		s.next()
-		ch = s.next() // read character after "/*"
-	}
-
-	// look for /* - style comments
-	for {
-		if ch < 0 || ch == eof {
-			s.err("comment not terminated")
-			break
-		}
-
-		ch0 := ch
-		ch = s.next()
-		if ch0 == '*' && ch == '/' {
-			break
-		}
+	if ch != eof && ch >= 0 {
+		s.unread()
 	}
 }
 
@@ -620,6 +600,14 @@ func isDigit(ch rune) bool {
 // isDecimal returns true if the given rune is a decimal number
 func isDecimal(ch rune) bool {
 	return '0' <= ch && ch <= '9'
+}
+
+func isCommentStart(ch rune) bool {
+	switch ch {
+	case ';', '#', '%', '|': // excluded, as it poses conflicts with MUL: '*'
+		return true
+	}
+	return false
 }
 
 // isHexadecimal returns true if the given rune is an hexadecimal number

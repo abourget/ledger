@@ -19,36 +19,30 @@ type tokenPair struct {
 
 var tokenLists = map[string][]tokenPair{
 	"comment": []tokenPair{
-		{token.COMMENT, "//"},
-		{token.COMMENT, "////"},
-		{token.COMMENT, "// comment"},
-		{token.COMMENT, "// /* comment */"},
-		{token.COMMENT, "// // comment //"},
-		{token.COMMENT, "//" + f100},
+		{token.COMMENT, ";"},
+		{token.COMMENT, "; comment"},
+		{token.COMMENT, ";; /* comment */"},
+		{token.COMMENT, "# // comment //"},
+		{token.COMMENT, "|" + f100},
 		{token.COMMENT, "#"},
-		{token.COMMENT, "##"},
+		{token.COMMENT, "### comment"},
 		{token.COMMENT, "# comment"},
-		{token.COMMENT, "# /* comment */"},
-		{token.COMMENT, "# # comment #"},
-		{token.COMMENT, "#" + f100},
-		{token.COMMENT, "/**/"},
-		{token.COMMENT, "/***/"},
-		{token.COMMENT, "/* comment */"},
-		{token.COMMENT, "/* // comment */"},
-		{token.COMMENT, "/* /* comment */"},
-		{token.COMMENT, "/*\n comment\n*/"},
-		{token.COMMENT, "/*" + f100 + "*/"},
+		{token.COMMENT, "% comment"},
 	},
 	"operator": []tokenPair{
 		{token.LBRACK, "["},
 		{token.LBRACE, "{"},
+		{token.LPAREN, "("},
 		{token.COMMA, ","},
 		{token.PERIOD, "."},
 		{token.RBRACK, "]"},
 		{token.RBRACE, "}"},
+		{token.RPAREN, ")"},
 		{token.ASSIGN, "="},
 		{token.ADD, "+"},
 		{token.SUB, "-"},
+		{token.MUL, "*"},
+		{token.DIV, "/"},
 	},
 	"bool": []tokenPair{
 		{token.BOOL, "true"},
@@ -440,8 +434,6 @@ func TestError(t *testing.T) {
 	testError(t, `"`, "1:2", "literal not terminated", token.STRING)
 	testError(t, `"abc`, "1:5", "literal not terminated", token.STRING)
 	testError(t, `"abc`+"\n", "2:1", "literal not terminated", token.STRING)
-	testError(t, `/*/`, "1:4", "comment not terminated", token.COMMENT)
-	testError(t, `/foo`, "1:1", "expected '/' for comment", token.COMMENT)
 }
 
 func testError(t *testing.T, src, pos, msg string, tok token.Type) {

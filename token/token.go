@@ -5,8 +5,6 @@ package token
 import (
 	"fmt"
 	"strconv"
-
-	hclstrconv "github.com/hashicorp/hcl/hcl/strconv"
 )
 
 // Token defines a single HCL token which can be obtained via the Scanner
@@ -14,7 +12,6 @@ type Token struct {
 	Type Type
 	Pos  Pos
 	Text string
-	JSON bool
 }
 
 // Type is the set of lexical tokens of the Ledger file syntax.
@@ -25,6 +22,7 @@ const (
 	ILLEGAL Type = iota
 	EOF
 	COMMENT
+	INDENT // some whitespace at beginning of the line, "   ", "\t", etc..
 
 	identifier_beg
 	IDENT // literals
@@ -35,6 +33,23 @@ const (
 	STRING // "abc"
 	literal_end
 	identifier_end
+
+	keyword_beg
+	ACCOUNT
+	ALIAS
+	ASSERT
+	CHECK
+	BUCKET // "bucket", "A"
+	DEFINE
+	END
+	INCLUDE
+	APPLY_TAG // "apply tag"and END_APPLY_TAG ?!
+	END_APPLY_TAG
+	TAG                  // "tag"
+	YEAR                 // "year 2014", "Y 2015",
+	COMMODITY_CONVERSION // "C"
+	DEFAULT_COMMODITY    // "D"
+	keyword_end
 
 	operator_beg
 	LBRACK // [
@@ -60,12 +75,28 @@ var tokens = [...]string{
 
 	EOF:     "EOF",
 	COMMENT: "COMMENT",
+	INDENT:  "INDENT",
 
 	IDENT:  "IDENT",
 	NUMBER: "NUMBER",
 	FLOAT:  "FLOAT",
 	BOOL:   "BOOL",
 	STRING: "STRING",
+
+	ACCOUNT:              "ACCOUNT",
+	ALIAS:                "ALIAS",
+	CHECK:                "CHECK",
+	ASSERT:               "ASSERT",
+	BUCKET:               "BUCKET",
+	DEFINE:               "DEFINE",
+	END:                  "END",
+	INCLUDE:              "INCLUDE",
+	APPLY_TAG:            "APPLY_TAG",
+	END_APPLY_TAG:        "END_APPLY_TAG",
+	TAG:                  "TAG",
+	YEAR:                 "YEAR",
+	COMMODITY_CONVERSION: "COMMODITY_CONVERSION",
+	DEFAULT_COMMODITY:    "DEFAULT_COMMODITY",
 
 	LBRACK: "LBRACK",
 	LBRACE: "LBRACE",
@@ -103,6 +134,10 @@ func (t Type) IsIdentifier() bool { return identifier_beg < t && t < identifier_
 // IsLiteral returns true for tokens corresponding to basic type literals; it
 // returns false otherwise.
 func (t Type) IsLiteral() bool { return literal_beg < t && t < literal_end }
+
+// IsKeyword returns true for tokens corresponding to keywords; it
+// returns false otherwise.
+func (t Type) IsKeyword() bool { return keyword_beg < t && t < keyword_end }
 
 // IsOperator returns true for tokens corresponding to operators and
 // delimiters; it returns false otherwise.
@@ -147,20 +182,12 @@ func (t Token) Value() interface{} {
 	case IDENT:
 		return t.Text
 	case STRING:
-		// Determine the Unquote method to use. If it came from JSON,
-		// then we need to use the built-in unquote since we have to
-		// escape interpolations there.
-		f := hclstrconv.Unquote
-		if t.JSON {
-			f = strconv.Unquote
-		}
-
 		// This case occurs if json null is used
 		if t.Text == "" {
 			return ""
 		}
 
-		v, err := f(t.Text)
+		v, err := strconv.Unquote(t.Text)
 		if err != nil {
 			panic(fmt.Sprintf("unquote %s err: %s", t.Text, err))
 		}

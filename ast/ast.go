@@ -12,10 +12,13 @@ type Node interface {
 	Pos() token.Pos
 }
 
-func (File) node()        {}
-func (Transaction) node() {}
-func (Posting) node()     {}
-func (Comment) node()     {}
+func (File) node()         {}
+func (Transaction) node()  {}
+func (Posting) node()      {}
+func (Comment) node()      {}
+func (ApplyAccount) node() {}
+func (Price) node()        {}
+func (Bucket) node()       {}
 
 type File struct {
 	Node Node
@@ -70,4 +73,10 @@ type Price struct {
 	Date   time.Time
 	Symbol string
 	Price  string
+}
+
+type Bucket struct {
+	Node    Node
+
+	Account string
 }
