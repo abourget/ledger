@@ -1,0 +1,4 @@
+commodity CAD
+  note Canadian Dollars
+  format 1,000.00 CAD
+  default

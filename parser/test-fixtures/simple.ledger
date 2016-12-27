@@ -1,0 +1,15 @@
+2013/02/01 * Opening
+    Assets:Checking                      1 $
+    Equity:Opening Balances              -1 $
+
+2013/02/01 Opening
+    Assets:Checking                      $ 1
+    Equity:Opening Balances              $ -1
+
+2013/02/01 ! Opening; Comment
+    Assets:Checking                      CAD 1
+    Equity:Opening Balances              CAD -1; Posting comment
+
+2013/02/01 * (#123) Opening
+    Assets:Checking                      1 USD  ; Other comment
+    Equity:Opening Balances
