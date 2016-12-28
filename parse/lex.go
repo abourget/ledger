@@ -39,25 +39,26 @@ const (
 	itemJournal
 	itemJournalItem
 	itemDate
-	itemDirective
-	itemXact
 	itemSpace
 	itemEOL
 	itemText
+	itemEqual // '='
 	itemAsterisk
+	itemExclamation
 	itemSemicolon
 	itemCommodity
-	itemAmount
 	itemIdentifier
-	itemNeg
-	itemInteger
+	itemLeftParen
+	itemRightParen
+	itemNeg      // '-'
+	itemQuantity // "123.1234", with optional decimals. No scientific notation, complex, imaginary, etc..
 	itemTilde
 	itemPeriodExpr
 	itemDot // to form numbers, with itemInteger + optionally: itemDot + itemInteger
 	itemStatus
 	itemAccountName // only a name like "Expenses:Misc"
 	itemAccount     // can be "(Expenses:Misc)" or "[Expenses:Misc]"
-	itemBeginAutomaticXact
+	itemBeginAutomatedXact
 	itemBeginPeriodicXact
 	itemBeginXact
 
@@ -222,13 +223,13 @@ func lexJournal(l *lexer) stateFn {
 		}
 		l.emit(itemSpace)
 	case r == '~':
-		l.emit(itemBeginPeriodicXact)
+		l.emit(itemTilde)
 		return lexPeriodicXact
 	case r == '=':
-		l.emit(itemBeginAutomaticXact)
-		return lexAutomaticXact
+		l.emit(itemEqual)
+		return lexAutomatedXact
 	case unicode.IsDigit(r):
-		return lexPlainXact
+		return lexPlainXactDate
 	case isAlphaNumeric(r):
 		l.backup()
 		return lexIdentifier
@@ -263,6 +264,11 @@ Loop:
 					l.errorf("missing filename after 'include'")
 					return nil
 				}
+			case word == "end":
+				l.emit(itemEnd)
+				l.scanSpaces()
+				return lexIdentifier
+				// handle "alias", etc..
 			case key[word] > itemKeyword:
 				l.emit(key[word])
 			default:
@@ -284,73 +290,103 @@ func (l *lexer) atTerminator() bool {
 
 func lexPeriodicXact(l *lexer) stateFn {
 	l.scanSpaces()
+	l.scanStringNote()
+	return lexPostings
+}
+
+func (l *lexer) scanStringNote() {
 Loop:
 	for {
 		switch r := l.next(); {
 		case r == ';':
 			l.backup()
-			if l.current() == "" {
-				l.errorf("missing period expression")
-				return nil
+			if l.current() != "" {
+				l.emit(itemString)
 			}
-			l.emit(itemPeriodExpr)
 			l.next() // skip that ';' again..
 			l.scanNote()
 			break Loop
 		case isEndOfLine(r):
-			l.emit(itemPeriodExpr)
-			break
+			if l.current() != "" {
+				l.emit(itemString)
+			}
+			break Loop
 		case r == eof:
-			l.errorf("premature end-of-file, expected postings for periodic transaction")
-			return nil
+			if l.current() != "" {
+				l.emit(itemString)
+			}
+			break Loop
 		default:
 			continue
 		}
 	}
-	return lexPostings
+	return
 }
 
 func (l *lexer) scanNote() {
 	for {
 		switch r := l.next(); {
 		case isEndOfLine(r) || r == eof:
-			l.emit(itemNote)
+			l.backup()
+			if l.current() != "" {
+				l.emit(itemNote)
+			}
 			return
-		default:
-			continue
 		}
 	}
-
 }
 
-func lexAutomaticXact(l *lexer) stateFn {
-	l.errorf("not yet implemented")
-	return nil
+func lexAutomatedXact(l *lexer) stateFn {
+	l.scanSpaces()
+	l.scanStringNote()
+	return lexPostings
 }
 
-func lexPlainXact(l *lexer) stateFn {
-	for {
-		// Refine the `date` parsing at the Lex-level..
-		switch r := l.peek(); {
-		case unicode.IsDigit(r):
-			l.next()
-		case r == '.' || r == '-' || r == '/':
-			l.next()
-		case isSpace(r):
-			l.emit(itemDate)
-			l.scanSpaces()
-			return lexPostings
-		case r == eof:
-			l.errorf("unexpected end-of-file, expected transaction Payee or Description")
-			return nil
-		case isEndOfLine(r):
-			l.errorf("unexpected end-of-line, expected transaction Payee or Description")
-			return nil
-		default:
-			l.errorf("invalid character in transaction date specification: %q", r)
-			return nil
-		}
+func lexPlainXactDate(l *lexer) stateFn {
+	// Refine the `date` parsing at the Lex-level..
+	switch r := l.peek(); {
+	case unicode.IsDigit(r) || r == '.' || r == '-' || r == '/':
+		l.next()
+	case isSpace(r):
+		l.emit(itemDate)
+		l.scanSpaces()
+		return lexPlainXactRest
+	case r == eof:
+		l.errorf("unexpected end-of-file")
+		return nil
+	case isEndOfLine(r):
+		l.errorf("unexpected end-of-line")
+		return nil
+	default:
+		l.errorf("invalid character in transaction date specification: %#U", r)
+		return nil
 	}
+	return lexPlainXactDate
+}
+
+func lexPlainXactRest(l *lexer) stateFn {
+	switch r := l.next(); {
+	case r == '=':
+		l.emit(itemEqual)
+		l.scanSpaces()
+		return lexPlainXactDate
+	case r == '*':
+		l.emit(itemAsterisk)
+		l.scanSpaces()
+	case r == '!':
+		l.emit(itemExclamation)
+		l.scanSpaces()
+	case r == '(':
+		l.emit(itemLeftParen)
+		l.scanStringUntil(')')
+	case r == ')':
+		l.emit(itemRightParen)
+	default:
+		l.backup()
+		l.scanStringNote()
+		return lexPostings
+	}
+	return lexPlainXactRest
 }
 
 func (l *lexer) scanSpaces() bool {
@@ -380,12 +416,103 @@ Loop:
 		return false
 	}
 	l.emit(itemString)
+
+	return true
+}
+
+func (l *lexer) scanStringUntil(until rune) bool {
+Loop:
+	for {
+		switch r := l.peek(); {
+		case isEndOfLine(r):
+			break Loop
+		case r == eof:
+			break Loop
+		case r == until:
+			break Loop
+		default:
+			l.next()
+		}
+	}
+	if l.current() == "" {
+		return false
+	}
+	l.emit(itemString)
 	return true
 }
 
 func lexPostings(l *lexer) stateFn {
-	l.errorf("not yet implemented")
-	return nil
+	// Always arrive here with an EOL as first token, or an Account name directly.
+	var expectIndent bool
+
+	for {
+		r := l.next()
+		switch {
+		case isEndOfLine(r):
+			expectIndent = true
+			l.emit(itemEOL)
+			continue
+		case expectIndent:
+			if isSpace(r) {
+				l.scanSpaces()
+				return lexPostings
+			} else {
+				l.backup()
+				return lexJournal
+			}
+		case r == '*':
+			l.emit(itemAsterisk)
+			l.scanSpaces()
+		case r == '!':
+			l.emit(itemExclamation)
+			l.scanSpaces()
+		case unicode.IsLetter(r):
+			// TODO: scan the Account Name,
+			// then scan:
+			//   account values_opt note_opt EOL;
+			l.scanAccountName() // until EOL or until SPACER (two spaces, a tab or one of each)
+			return lexPostingAmount
+		}
+		expectIndent = false
+	}
+
+	return lexJournal
+}
+
+func lexPostingAmount(l *lexer) stateFn {
+	/*
+HERE SCAN: values_opt note_opt EOL
+
+values_opt:
+    spacer amount_expr price_opt |
+    [epsilon]
+    ;
+
+amount_expr: amount | value_expr ;
+
+amount:
+    neg_opt commodity quantity annotation |
+    quantity commodity annotation ;
+
+price_opt: price | [epsilon] ;
+price:
+    '@' amount_expr |
+    '@@' amount_expr            [in this case, it's the whole price]
+    ;
+
+annotation: lot_price_opt lot_date_opt lot_note_opt ;
+
+lot_date_opt: date | [epsilon] ;
+lot_date: '[' date ']' ;
+
+lot_price_opt: price | [epsilon] ;
+lot_price: '{' amount '}' ;
+
+lot_note_opt: note | [epsilon] ;
+lot_note: '(' string ')' ;
+
+ */
+	return lexPostings // return here before EOL is consumed, to see if we continue the postings...
 }
 
 // isSpace reports whether r is a space character.

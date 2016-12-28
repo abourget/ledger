@@ -32,38 +32,56 @@ var (
 	tEOF          = item{itemEOF, 0, ""}
 	tEOL          = item{itemEOL, 0, "\n"}
 	tSpace        = item{itemSpace, 0, " "}
-	tBegAutoXact  = item{itemBeginAutomaticXact, 0, "="}
-	tBegPerioXact = item{itemBeginPeriodicXact, 0, "~"}
+	tBegAutoXact  = item{itemEqual, 0, "="}
+	tBegPerioXact = item{itemTilde, 0, "~"}
 )
 
 var lexTests = []lexTest{
 	{"empty", "", []item{tEOF}},
 	{"spaces", " \t\n", []item{{itemSpace, 0, " \t"}, tEOL, tEOF}},
 	{"auto xact", `= `, []item{
-		tBegAutoXact,
+		{itemEqual, 0, "="},
+		{itemSpace, 0, " "},
 		{itemError, 0, "not yet implemented"},
 	}},
 	{"periodic xact with period", `~  monthly ; Note`, []item{
-		tBegPerioXact,
+		{itemTilde, 0, "~"},
 		{itemSpace, 0, "  "},
-		{itemPeriodExpr, 0, "monthly "},
+		{itemString, 0, "monthly "},
 		{itemNote, 0, "; Note"},
 		{itemError, 0, "not yet implemented"},
 	}},
 	{"plain xact", "2016/09/09 Payee", []item{
 		{itemDate, 0, "2016/09/09"},
 		{itemSpace, 0, " "},
+		{itemString, 0, "Payee"},
 		{itemError, 0, "not yet implemented"},
 	}},
 	{"plain xact eof with note", "2016/09---..- Payee", []item{
 		{itemDate, 0, "2016/09---..-"},
 		{itemSpace, 0, " "},
+		{itemString, 0, "Payee"},
 		{itemError, 0, "not yet implemented"},
 	}},
 	{"include file", `include "filename"`, []item{
 		{itemInclude, 0, "include"},
 		{itemSpace, 0, " "},
 		{itemString, 0, `"filename"`},
+		tEOF,
+	}},
+	{"simple transaction", "2016/09/09 Payee\n Account  - 20.00 CAD", []item{
+		{itemDate, 0, "2016/09/09"},
+		{itemSpace, 0, " "},
+		{itemString, 0, "Payee"},
+		tEOL,
+		{itemSpace, 0, " "},
+		{itemAccountName, 0, "Account"},
+		{itemSpace, 0, "  "},
+		{itemNeg, 0, "-"},
+		{itemSpace, 0, " "},
+		{itemQuantity, 0, "20.00"},
+		{itemSpace, 0, "  "},
+		{itemCommodity, 0, "CAD"},
 		tEOF,
 	}},
 
