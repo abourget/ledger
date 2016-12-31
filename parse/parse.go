@@ -135,8 +135,6 @@ func (t *Tree) parseXact(x *XactNode) {
 		x.Description = strings.TrimRight(x.Description, " ")
 	}
 
-	fmt.Println("Postings now")
-
 	t.parsePostings(x)
 }
 
