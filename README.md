@@ -1,7 +1,7 @@
 Go Ledger parser
 ================
 
-*Short term goal*: parse relatively complex Ledger files, and provide
+**Short term goal**: parse relatively complex Ledger files, and provide
 an abstract syntax tree (a full programmatic representation of the
 file), to be able to tweak some parts programmatically, and then write
 back the files to disk.
@@ -11,14 +11,14 @@ back the files to disk.
   with any software.
 
 * `json2ledger` will read the same file, and produce a .ledger file,
-  properly formatted
+  properly formatted (not yet implemented)
 
 * `ledgerfmt` will be similar to `gofmt` in that it parses the input
   file, indents and aligns according to conventions, and outputs the
   file back, without any semantic changes or interpretation of the
-  data.
+  data. (not yet implemented)
 
-*Longer term goal*: do the mathematical computations of the original
+**Longer term goal**: do the mathematical computations of the original
 Ledger program.
 
 
@@ -265,6 +265,16 @@ outputs:
 }
 ```
 
+Shortcomings
+------------
+
+This implementation has a few limitations compared to the C++ version:
+
+* It does not yet support all top-level constructs, like "account", "alias", "P", "D", "year" / "Y", etc.. Most of those will be simple additions.
+* It does not yet read or parses tags
+* It does not yet implement the `value_expr` language that allows you
+  to do complex math computations directly in the postings of your
+  transactions.
 
 
 References
