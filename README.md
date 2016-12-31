@@ -275,6 +275,8 @@ This implementation has a few limitations compared to the C++ version:
 * It does not yet implement the `value_expr` language that allows you
   to do complex math computations directly in the postings of your
   transactions.
+* Also note that the current implementation does not validate any
+  balances. It merely acts on the text of the file.
 
 
 References
