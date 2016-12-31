@@ -172,7 +172,7 @@ func (l *lexer) backup() {
 // emit passes an item back to the client.
 func (l *lexer) emit(t itemType) {
 	it := item{t, l.start, l.input[l.start:l.pos]}
-	//debug(fmt.Sprintf("Piping item: %v", it))
+	debug(fmt.Sprintf("Piping item: %v", it))
 	l.items <- it
 	l.start = l.pos
 }
@@ -683,7 +683,7 @@ var debugCount = 0
 
 func debug(text string) {
 	debugCount++
-	if debugCount < 50 {
+	if debugCount < 100 {
 		fmt.Println(text)
 	}
 }

@@ -213,8 +213,8 @@ type PostingNode struct {
 	Account           string
 	AccountPostSpace  string // if non-empty, this must always be two spaces, one space and one tab, one tab, or more whitespace, as per specs.
 	Amount            *AmountNode
-	BalanceAssertion  string
-	BalanceAssignment string
+	BalanceAssertion  *AmountNode
+	BalanceAssignment *AmountNode
 	Price             *AmountNode
 	PriceIsForWhole   bool // false = per unit (@); true = price for the whole (@@), meaningful only if `Price` is defined.
 	LotDate           time.Time

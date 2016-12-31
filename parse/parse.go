@@ -111,6 +111,17 @@ func (t *Tree) parseXact(x *XactNode) {
 	}
 
 	switch it := t.peekNonSpace(); it.typ {
+	case itemLeftParen:
+		t.next()
+		if it := t.next(); it.typ != itemString {
+			t.unexpected(it, "transaction code, expected a string")
+		} else {
+			x.Code = it.val
+			t.expect(itemRightParen, "transaction code closing")
+		}
+	}
+
+	switch it := t.peekNonSpace(); it.typ {
 	case itemString:
 		t.next()
 		x.Description = it.val
@@ -217,39 +228,17 @@ func (t *Tree) parsePosting(p *PostingNode) {
 			t.unexpected(it, "posting price; a negative price ?")
 		}
 		p.Price = a
+	}
 
-		// // Only support positive amounts here, no negative
-		// switch it := t.peekNonSpace(); it.typ {
-		// case itemCommodity:
-		// 	accum.next(t)
-		// 	p.PriceCommodity = it.val
-
-		// 	accum.space(t)
-
-		// 	switch it := accum.next(t); it.typ {
-		// 	case itemQuantity:
-		// 		p.Price = it.val
-		// 	default:
-		// 		t.unexpected(it, "posting price, expected quantity")
-		// 	}
-		// case itemQuantity:
-		// 	accum.next(t)
-		// 	p.Price = it.val
-
-		// 	accum.space(t)
-
-		// 	switch it := t.peek(); it.typ {
-		// 	case itemCommodity:
-		// 		accum.next(t)
-		// 		p.PriceCommodity = it.val
-		// 	default:
-		// 	}
-		// case itemNeg:
-		// 	t.unexpected(it, "posting price; a negative price ?")
-		// default:
-		// 	t.unexpected(it, "posting price")
-		// }
-
+	// Handle "= AMOUNT"
+	if it := t.peekNonSpace(); it.typ == itemEqual {
+		t.next()
+		a := t.parseAmount()
+		if p.Amount == nil {
+			p.BalanceAssignment = a
+		} else {
+			p.BalanceAssertion = a
+		}
 	}
 
 	if it := t.peekNonSpace(); it.typ == itemLotPrice {
@@ -288,9 +277,12 @@ func (t *Tree) parseAmount() (amount *AmountNode) {
 	// TODO: implement detection of value expressions
 	// https://github.com/ledger/ledger/blob/next/doc/grammar.y#L149-L155
 
-	if it := t.peek(); it.typ == itemNeg {
+	switch it := t.peek(); it.typ {
+	case itemNeg:
 		amount.next(t)
 		amount.Negative = true
+	case itemEqual:
+		return nil
 	}
 
 	amount.space(t)
@@ -304,7 +296,7 @@ func (t *Tree) parseAmount() (amount *AmountNode) {
 		amount.Quantity = it.val
 
 	default:
-		t.unexpected(it, "amount")
+		t.unexpected(it, "amount quantity/commodity")
 	}
 
 	amount.space(t)

@@ -21,9 +21,9 @@ func TestParse(t *testing.T) {
   Assets:Cash             CAD -20.00    ; That hurt
 
 
-2016/09/09 ! Payee
+2016/09/09 ! (Kode) Payee
   ; Transaction notes
-  Expenses:Misc    20.00 CAD
+  Expenses:Misc    20.00 CAD = 700.00 CAD
   Assets:Cash  ; Woah, not sure
  ; Here again
   ; And yet another note for this posting.
@@ -31,6 +31,10 @@ func TestParse(t *testing.T) {
 2016/09/10 Desc
   A  - $ 23
   B  23 $ @ 2 CAD
+
+2016/09/10 * Hi there
+  A   = 23 CAD
+  B   -100 CAD = -200 USD
 `)
 	err := tree.Parse()
 	if err != nil {
