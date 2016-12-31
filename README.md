@@ -1,158 +1,275 @@
 Go Ledger parser
-----------------
+================
 
 *Short term goal*: parse relatively complex Ledger files, and provide
 an abstract syntax tree (a full programmatic representation of the
 file), to be able to tweak some parts programmatically, and then write
 back the files to disk.
 
-* `ledgerfmt` is the first use of this library, a tool similar to
-  `gofmt` that parses the file, indents and aligns according to
-  conventions, and outputs the file back, without any semantic changes
-  or interpretation of the data.
+* `ledger2json` is the first use of this library. It parses your
+  Ledger file and outputs a `.json` file, which you can manipulate
+  with any software.
+
+* `json2ledger` will read the same file, and produce a .ledger file,
+  properly formatted
+
+* `ledgerfmt` will be similar to `gofmt` in that it parses the input
+  file, indents and aligns according to conventions, and outputs the
+  file back, without any semantic changes or interpretation of the
+  data.
 
 *Longer term goal*: do the mathematical computations of the original
 Ledger program.
 
-Layers of analysis
-------------------
 
-Several layers are presented in this library:
+`ledger2json`
+-------------
 
-1. *Lexer*: where each piece of text in the file is mapped to a
-   function, like `2016/09/09` to an `itemDate`, `CAD` to an
-   `itemCommodity`, `20.00` to an `itemQuantity`, etc...
+For a simple example, see the `parse_test.go` file. Here is an excerpt:
 
-The current implementation interpretes:
+```ledger
+; Top level comment
 
-```
-2016/09/09 * Kentucky Friends Beef  ; Never go back there
+2016/09/09 = 2016-09-10 * Kentucky Friends Beef      ; Never go back there
+   ; Some more notes for the transaction
   Expenses:Restaurants    20.00 CAD
   Assets:Cash             CAD -20.00    ; That hurt
 
 
 2016/09/09 ! Payee
+  ; Transaction notes
   Expenses:Misc    20.00 CAD
   Assets:Cash  ; Woah, not sure
+ ; Here again
+  ; And yet another note for this posting.
+
+2016/09/10 Desc
+  A  - $ 23
+  B  23 $ @ 2 CAD
 ```
 
-and lexes it to:
+outputs:
 
+```json
+{
+  "NodeType": 1,
+  "Pos": 0,
+  "Nodes": [
+    {
+      "NodeType": 4,
+      "Pos": 0,
+      "Comment": "; Top level comment"
+    },
+    {
+      "NodeType": 5,
+      "Pos": 20,
+      "Space": "\n"
+    },
+    {
+      "NodeType": 2,
+      "Pos": 21,
+      "XactPreSpace": "",
+      "Date": "2016-09-09T00:00:00Z",
+      "EffectiveDate": "2016-09-10T00:00:00Z",
+      "Description": "Kentucky Friends Beef      ",
+      "IsPending": false,
+      "IsCleared": true,
+      "NotePreSpace": "",
+      "Note": "; Never go back there\n; Some more notes for the transaction",
+      "Postings": [
+        {
+          "NodeType": 3,
+          "Pos": 139,
+          "AccountPreSpace": "",
+          "Account": "Expenses:Restaurants",
+          "AccountPostSpace": "    ",
+          "Amount": {
+            "NodeType": 6,
+            "Pos": 163,
+            "Raw": "20.00 CAD",
+            "Quantity": "20.00",
+            "Negative": false,
+            "Commodity": "CAD",
+            "ValueExpr": ""
+          },
+          "BalanceAssertion": "",
+          "BalanceAssignment": "",
+          "Price": null,
+          "PriceIsForWhole": false,
+          "LotDate": "0001-01-01T00:00:00Z",
+          "LotPrice": null,
+          "NotePreSpace": "",
+          "Note": ""
+        },
+        {
+          "NodeType": 3,
+          "Pos": 175,
+          "AccountPreSpace": "",
+          "Account": "Assets:Cash",
+          "AccountPostSpace": "             ",
+          "Amount": {
+            "NodeType": 6,
+            "Pos": 199,
+            "Raw": "CAD -20.00",
+            "Quantity": "20.00",
+            "Negative": true,
+            "Commodity": "CAD",
+            "ValueExpr": ""
+          },
+          "BalanceAssertion": "",
+          "BalanceAssignment": "",
+          "Price": null,
+          "PriceIsForWhole": false,
+          "LotDate": "0001-01-01T00:00:00Z",
+          "LotPrice": null,
+          "NotePreSpace": "",
+          "Note": "; That hurt"
+        }
+      ]
+    },
+    {
+      "NodeType": 5,
+      "Pos": 225,
+      "Space": "\n\n"
+    },
+    {
+      "NodeType": 2,
+      "Pos": 227,
+      "XactPreSpace": "",
+      "Date": "2016-09-09T00:00:00Z",
+      "EffectiveDate": "0001-01-01T00:00:00Z",
+      "Description": "Payee",
+      "IsPending": true,
+      "IsCleared": false,
+      "NotePreSpace": "",
+      "Note": "; Transaction notes",
+      "Postings": [
+        {
+          "NodeType": 3,
+          "Pos": 270,
+          "AccountPreSpace": "",
+          "Account": "Expenses:Misc",
+          "AccountPostSpace": "    ",
+          "Amount": {
+            "NodeType": 6,
+            "Pos": 287,
+            "Raw": "20.00 CAD",
+            "Quantity": "20.00",
+            "Negative": false,
+            "Commodity": "CAD",
+            "ValueExpr": ""
+          },
+          "BalanceAssertion": "",
+          "BalanceAssignment": "",
+          "Price": null,
+          "PriceIsForWhole": false,
+          "LotDate": "0001-01-01T00:00:00Z",
+          "LotPrice": null,
+          "NotePreSpace": "",
+          "Note": ""
+        },
+        {
+          "NodeType": 3,
+          "Pos": 299,
+          "AccountPreSpace": "",
+          "Account": "Assets:Cash",
+          "AccountPostSpace": "  ",
+          "Amount": null,
+          "BalanceAssertion": "",
+          "BalanceAssignment": "",
+          "Price": null,
+          "PriceIsForWhole": false,
+          "LotDate": "0001-01-01T00:00:00Z",
+          "LotPrice": null,
+          "NotePreSpace": "",
+          "Note": "; Woah, not sure\n; Here again\n; And yet another note for this posting."
+        }
+      ]
+    },
+    {
+      "NodeType": 5,
+      "Pos": 386,
+      "Space": "\n"
+    },
+    {
+      "NodeType": 2,
+      "Pos": 387,
+      "XactPreSpace": "",
+      "Date": "2016-09-10T00:00:00Z",
+      "EffectiveDate": "0001-01-01T00:00:00Z",
+      "Description": "Desc",
+      "IsPending": false,
+      "IsCleared": false,
+      "NotePreSpace": "",
+      "Note": "",
+      "Postings": [
+        {
+          "NodeType": 3,
+          "Pos": 405,
+          "AccountPreSpace": "",
+          "Account": "A",
+          "AccountPostSpace": "  ",
+          "Amount": {
+            "NodeType": 6,
+            "Pos": 408,
+            "Raw": "- $ 23",
+            "Quantity": "23",
+            "Negative": true,
+            "Commodity": "$",
+            "ValueExpr": ""
+          },
+          "BalanceAssertion": "",
+          "BalanceAssignment": "",
+          "Price": null,
+          "PriceIsForWhole": false,
+          "LotDate": "0001-01-01T00:00:00Z",
+          "LotPrice": null,
+          "NotePreSpace": "",
+          "Note": ""
+        },
+        {
+          "NodeType": 3,
+          "Pos": 417,
+          "AccountPreSpace": "",
+          "Account": "B",
+          "AccountPostSpace": "  ",
+          "Amount": {
+            "NodeType": 6,
+            "Pos": 420,
+            "Raw": "23 $",
+            "Quantity": "23",
+            "Negative": false,
+            "Commodity": "$",
+            "ValueExpr": ""
+          },
+          "BalanceAssertion": "",
+          "BalanceAssignment": "",
+          "Price": {
+            "NodeType": 6,
+            "Pos": 426,
+            "Raw": " 2 CAD",
+            "Quantity": "2",
+            "Negative": false,
+            "Commodity": "CAD",
+            "ValueExpr": ""
+          },
+          "PriceIsForWhole": false,
+          "LotDate": "0001-01-01T00:00:00Z",
+          "LotPrice": null,
+          "NotePreSpace": "",
+          "Note": ""
+        }
+      ]
+    }
+  ]
+}
 ```
-itemEOL("\n")
-itemDate("2016/09/09")
-itemSpace(" ")
-itemAsterisk("*")
-itemSpace(" ")
-itemString("Kentucky Friends Beef  ")
-itemNote("; Never go back there")
-itemEOL("\n")
-itemSpace("  ")
-itemAccountName("Expenses:Restaurants")
-itemSpace("    ")
-itemQuantity("20.00")
-itemSpace(" ")
-itemCommodity("CAD")
-itemEOL("\n")
-itemSpace("  ")
-itemAccountName("Assets:Cash")
-itemSpace("             ")
-itemCommodity("CAD")
-itemSpace(" ")
-itemNeg("-")
-itemQuantity("20.00")
-itemEOL("\n")
-itemEOL("\n")
-itemEOL("\n")
-itemDate("2016/09/09")
-itemSpace(" ")
-itemExclamation("!")
-itemSpace(" ")
-itemString("Payee")
-itemEOL("\n")
-itemSpace("  ")
-itemAccountName("Expenses:Misc")
-itemSpace("    ")
-itemQuantity("20.00")
-itemSpace(" ")
-itemCommodity("CAD")
-itemEOL("\n")
-itemSpace("  ")
-itemAccountName("Assets:Cash")
-itemSpace("  ")
-itemNote("; Woah, not sure")
-itemEOL("\n")
-itemEOF("")
-```
 
-2. *Parser*: node structure, or object-tree view of the Ledger file.
 
-The parser transforms the preceding items into a structure that looks approximately like:
-
-```
-Root.ListNode.Nodes: [
-- XactNode:
-    XactPreSpace: "\n"
-    IsCleared: true
-    IsPending: false
-    Description: "Kentucky Friends Beef"
-    NotePreSpace: " "
-    Note: "; Never go back there"
-    Postings:
-    - PostingNode:
-        AccountPreSpace: "  "
-        Account: "Expenses:Restaurants"
-        AmountPreSpace: "    "
-        AmountQuantity: "20.00"
-        AmountNegative: false
-        AmountCommodity: "CAD"
-        AmountExpression: ""
-        NotePreSpace: ""
-        Note: ""
-    - PostingNode:
-        AccountPreSpace: "  "
-        Account: "Assets:Cash"
-        AmountPreSpace: "             "
-        Amount:
-          Decimal() = Decimal("-20.00")
-          Quantity: "20.00"
-          Negative: true
-          Commodity: "CAD"
-        AmountExpression: ""
-        NotePreSpace: "    "
-        Note: "; That hurt"
-- XactNode
-    XactPreSpace: "\n\n"
-    IsCleared: false
-    IsPending: true
-    Description: "Payee"
-    NotePreSpace: ""
-    Note: ""
-    Postings:
-    - PostingNode:
-        AccountPreSpace: "  "
-        Account: "Expenses:Misc"
-        AmountPreSpace: "    "
-        Amount:
-          Decimal() = Decimal("20.00")
-          Quantity: "20.00"
-          Negative: false
-          Commodity: "CAD"
-        AmountExpression: ""
-        NotePreSpace: ""
-        Note: ""
-    - PostingNode:
-        AccountPreSpace: "  "
-        Account: "Assets:Cash"
-        AmountPreSpace: "             "
-        Amount:
-          Decimal() = Decimal("-20.00")
-          Quantity: "20.00"
-          Negative: true
-          Commodity: "CAD"
-        AmountExpression: ""
-        NotePreSpace: "    "
-        Note: "; That hurt"
 
 References
 ----------
+
+* The lexer is heavily based on Go's `text/template`, on which this great talk is based (and which inspired me): https://www.youtube.com/watch?v=HxaD_trXwRE
+* https://github.com/howeyc/ledger for a simple Go implementation
+* http://plaintextaccounting.org/ for more fun about Ledger files

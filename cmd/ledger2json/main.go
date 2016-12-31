@@ -1,6 +1,7 @@
-package ledger
+package main
 
 import (
+	"encoding/json"
 	"io/ioutil"
 	"log"
 	"os"
@@ -14,10 +15,16 @@ func main() {
 		log.Fatalln("Error reading input:", err)
 	}
 
-	err = parse.New("stdin", string(cnt)).Parse()
+	t := parse.New("stdin", string(cnt))
+	err = t.Parse()
 	if err != nil {
 		log.Fatalln("Parsing error:", err)
 	}
 
+	out, err := json.MarshalIndent(t.Root, "", "  ")
+	if err != nil {
+		log.Fatalln("json encoding:", err)
+	}
 
+	os.Stdout.Write(out)
 }

@@ -161,6 +161,7 @@ type XactNode struct {
 	Date          time.Time
 	EffectiveDate time.Time
 	Description   string
+	Code          string
 	IsPending     bool
 	IsCleared     bool
 	NotePreSpace  string
