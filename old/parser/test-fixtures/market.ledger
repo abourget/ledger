@@ -1,6 +1,0 @@
-; Pre-transaction comment
-2013/04/14 * Sold BTC
-    ; Transaction tags
-    Assets:Coins:MtGox            -0.01 BTC @ 104 USD
-    Expenses:MtGox Fees                  0.00624 USD
-    Assets:Coins:MtGox
