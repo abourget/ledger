@@ -46,59 +46,299 @@ func (t *Tree) Parse() (err error) {
 	t.Root = t.newList(Pos(0))
 
 	for t.peek().typ != itemEOF {
-		token := t.next()
-		switch token.typ {
+		it := t.next()
+		switch it.typ {
 		case itemError:
-			t.errorf(token.val)
-		case itemSpace:
-			t.Root.add(t.newSpace(token))
+			t.errorf(it.val)
+		case itemSpace, itemEOL:
+			spaceVal := it.val
+		EatSpaces:
+			for {
+				switch it := t.peek(); it.typ {
+				case itemSpace, itemEOL:
+					t.next()
+					spaceVal += it.val
+				default:
+					break EatSpaces
+				}
+			}
+			t.Root.add(t.newSpace(it.pos, spaceVal))
 		case itemComment:
-			t.Root.add(t.newComment(token))
+			t.Root.add(t.newComment(it))
+			t.expect(itemEOL, "comment")
 		case itemEqual:
 			// Analyze an automated transaction
 		case itemTilde:
 			// Analyze a periodic transaction
 		case itemDate:
 			// Analyze a plain transaction
-			txDate, err := time.Parse("2006-01-02", strings.Replace(strings.Replace(token.val, "/", "-", -1), ".", "-", -1))
+			txDate, err := parseDate(it.val)
 			if err != nil {
 				t.error(err)
 			}
-			x := t.newXact(token.pos)
-			x.add(token)
+			x := t.newXact(it.pos)
 			x.Date = txDate
 			t.parseXact(x)
+		default:
+			t.errorf("unsupported top-level directive")
 		}
 	}
 	return nil
 }
 
 func (t *Tree) parseXact(x *XactNode) {
-	switch n := t.peekNonSpace(); n.typ {
+	switch it := t.peekNonSpace(); it.typ {
+	case itemEqual:
+		t.next() // consume this one
+		it = t.nextNonSpace()
+		if it.typ != itemDate {
+			t.unexpected(it, "transaction, after '='")
+		}
+		effectiveDate, err := parseDate(it.val)
+		if err != nil {
+			t.error(err)
+		}
+		x.EffectiveDate = effectiveDate
+	}
+
+	switch it := t.peekNonSpace(); it.typ {
 	case itemAsterisk:
 		t.next()
 		x.IsCleared = true
 	case itemExclamation:
 		t.next()
 		x.IsPending = true
-	case itemNote:
-		t.errorf("missing payee/description before notes")
-	case itemEOL, itemEOF:
-		t.errorf("unexpected end of input")
 	}
 
-	switch n := t.peekNonSpace(); n.typ {
+	switch it := t.peekNonSpace(); it.typ {
+	case itemString:
+		t.next()
+		x.Description = it.val
 	case itemAsterisk, itemExclamation:
 		t.errorf("cannot specify cleared and/or pending more than once")
-	case itemString:
-		token := t.next()
-		x.Description = token.val
 	case itemNote:
 		t.errorf("missing payee/description before notes")
 	case itemEOL, itemEOF:
 		t.errorf("unexpected end of input")
 	}
 
+	switch it := t.peekNonSpace(); it.typ {
+	case itemNote:
+		t.next()
+		x.Note = it.val
+	default:
+	}
+
+	t.expect(itemEOL, "transaction opening line")
+
+	if x.Note == "" {
+		x.Description = strings.TrimRight(x.Description, " ")
+	}
+
+	fmt.Println("Postings now")
+
+	t.parsePostings(x)
+}
+
+func (t *Tree) parsePostings(x *XactNode) {
+	// stop on double EOL, or EOL + Space + EOL
+	var posting *PostingNode
+	for {
+		switch it := t.peek(); it.typ {
+		case itemSpace:
+			t.next()
+			// This is posting
+			switch it := t.peek(); it.typ {
+			case itemAccountName:
+				t.next()
+				posting = x.newPosting(it.pos)
+				posting.Account = it.val
+				t.parsePosting(posting)
+
+			case itemNote:
+				t.next()
+				if posting == nil {
+					// attach to the XactMode
+					if x.Note == "" {
+						x.Note = it.val
+					} else {
+						x.Note = x.Note + "\n" + it.val
+					}
+				} else {
+					posting.Note = posting.Note + "\n" + it.val
+				}
+				t.expect(itemEOL, "comment")
+			}
+
+		default:
+			return
+		}
+	}
+}
+
+func (t *Tree) parsePosting(p *PostingNode) {
+	switch it := t.peek(); it.typ {
+	case itemSpace:
+		t.next()
+		p.AccountPostSpace = it.val
+	case itemEOL:
+		t.next()
+		return
+	default:
+		t.unexpected(it, "transaction posting")
+		return
+	}
+
+	if it := t.peek(); it.typ == itemNote {
+		t.next()
+		p.Note = it.val
+
+		t.expect(itemEOL, "transaction opening line")
+		return
+	}
+
+	/**
+	amount:
+	    neg_opt commodity neg_opt quantity annotation |
+	    neg_opt quantity commodity annotation ;
+	*/
+
+	a := t.parseAmount()
+	p.Amount = a
+
+	// Parse optional prices '@' and '@@'
+	if it := t.peekNonSpace(); it.typ == itemAt || it.typ == itemDoubleAt {
+		t.next()
+
+		if it.typ == itemDoubleAt {
+			p.PriceIsForWhole = true
+		}
+
+		a := t.parseAmount()
+		if a.Negative {
+			t.unexpected(it, "posting price; a negative price ?")
+		}
+		p.Price = a
+
+		// // Only support positive amounts here, no negative
+		// switch it := t.peekNonSpace(); it.typ {
+		// case itemCommodity:
+		// 	accum.next(t)
+		// 	p.PriceCommodity = it.val
+
+		// 	accum.space(t)
+
+		// 	switch it := accum.next(t); it.typ {
+		// 	case itemQuantity:
+		// 		p.Price = it.val
+		// 	default:
+		// 		t.unexpected(it, "posting price, expected quantity")
+		// 	}
+		// case itemQuantity:
+		// 	accum.next(t)
+		// 	p.Price = it.val
+
+		// 	accum.space(t)
+
+		// 	switch it := t.peek(); it.typ {
+		// 	case itemCommodity:
+		// 		accum.next(t)
+		// 		p.PriceCommodity = it.val
+		// 	default:
+		// 	}
+		// case itemNeg:
+		// 	t.unexpected(it, "posting price; a negative price ?")
+		// default:
+		// 	t.unexpected(it, "posting price")
+		// }
+
+	}
+
+	if it := t.peekNonSpace(); it.typ == itemLotPrice {
+		t.next()
+		p.LotPrice = t.newAmount()
+		p.LotPrice.Quantity = strings.Trim(it.val, "{}")
+		p.LotPrice.Pos = it.pos
+	}
+
+	if it := t.peekNonSpace(); it.typ == itemLotDate {
+		t.next()
+
+		dt, err := parseDate(it.val)
+		if err != nil {
+			t.error(err)
+		}
+		p.LotDate = dt
+	}
+
+	if it := t.peek(); it.typ == itemSpace {
+		t.next()
+		p.NotePreSpace = it.val
+	}
+
+	if it := t.peek(); it.typ == itemNote {
+		t.next()
+		p.Note = it.val
+	}
+
+	t.expect(itemEOL, "transaction opening line")
+}
+
+func (t *Tree) parseAmount() (amount *AmountNode) {
+	amount = t.newAmount()
+
+	// TODO: implement detection of value expressions
+	// https://github.com/ledger/ledger/blob/next/doc/grammar.y#L149-L155
+
+	if it := t.peek(); it.typ == itemNeg {
+		amount.next(t)
+		amount.Negative = true
+	}
+
+	amount.space(t)
+
+	switch it := t.peek(); it.typ {
+	case itemCommodity:
+		amount.next(t)
+		amount.Commodity = it.val
+	case itemQuantity:
+		amount.next(t)
+		amount.Quantity = it.val
+
+	default:
+		t.unexpected(it, "amount")
+	}
+
+	amount.space(t)
+
+	if it := t.peek(); it.typ == itemNeg {
+		if amount.Negative {
+			t.errorf("unexpected double negative")
+		}
+		amount.next(t)
+		amount.Negative = true
+	}
+
+	amount.space(t)
+
+	switch it := t.peek(); it.typ {
+	case itemCommodity:
+		if amount.Commodity != "" {
+			t.errorf("unexpected commodity (specified twice ?)")
+		}
+		amount.next(t)
+		amount.Commodity = it.val
+	case itemQuantity:
+		if amount.Quantity != "" {
+			t.errorf("unexpected quantity (specified twice ?)")
+		}
+		amount.next(t)
+		amount.Quantity = it.val
+	default:
+		t.unexpected(it, "amount")
+	}
+
+	return
 }
 
 func (t *Tree) append(n Node) {
@@ -242,4 +482,17 @@ func (t *Tree) recover(errp *error) {
 		*errp = e.(error)
 	}
 	return
+}
+
+func appendComment(orig, new string) string {
+	if orig == "" {
+		return new
+	}
+	return orig + "\n" + new
+}
+
+func parseDate(input string) (time.Time, error) {
+	stdSeparator := strings.Replace(strings.Replace(input, "/", "-", -1), ".", "-", -1)
+	undecorated := strings.Trim(stdSeparator, "[]") // from itemLotPrice
+	return time.ParseInLocation("2006-01-02", undecorated, time.UTC)
 }

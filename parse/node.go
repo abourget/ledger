@@ -42,6 +42,14 @@ func (t NodeType) Type() NodeType {
 	return t
 }
 
+func (t NodeType) String() string {
+	label, found := nodeLabel[t]
+	if !found {
+		return fmt.Sprintf("%d", t)
+	}
+	return label
+}
+
 const (
 	NodeJournal NodeType = iota
 	NodeList
@@ -49,10 +57,18 @@ const (
 	NodePosting
 	NodeComment
 	NodeSpace
-	NodeNumber
-	NodeSymbol
-	NodeDate
+	NodeAmount
 )
+
+var nodeLabel = map[NodeType]string{
+	NodeJournal: "NodeJournal",
+	NodeList:    "NodeList",
+	NodeXact:    "NodeXact",
+	NodePosting: "NodePosting",
+	NodeComment: "NodeComment",
+	NodeSpace:   "NodeSpace",
+	NodeAmount:  "NodeAmount",
+}
 
 /** ListNode **/
 
@@ -110,8 +126,8 @@ type SpaceNode struct {
 	Space string
 }
 
-func (t *Tree) newSpace(i item) *SpaceNode {
-	return &SpaceNode{NodeType: NodeSpace, Pos: i.pos, tr: t, Space: i.val}
+func (t *Tree) newSpace(p Pos, spaces string) *SpaceNode {
+	return &SpaceNode{NodeType: NodeSpace, Pos: p, tr: t, Space: spaces}
 }
 
 func (n *SpaceNode) String() string { return n.Space }
@@ -139,15 +155,17 @@ func (n *CommentNode) tree() *Tree    { return n.tr }
 type XactNode struct {
 	NodeType
 	Pos
-	tr    *Tree
-	items []item
+	tr *Tree
 
-	Date        time.Time
-	Description string
-	IsPending   bool
-	IsCleared   bool
-	Note        string
-	Postings    []*PostingNode
+	XactPreSpace  string
+	Date          time.Time
+	EffectiveDate time.Time
+	Description   string
+	IsPending     bool
+	IsCleared     bool
+	NotePreSpace  string
+	Note          string
+	Postings      []*PostingNode
 }
 
 func (t *Tree) newXact(pos Pos) *XactNode {
@@ -156,12 +174,8 @@ func (t *Tree) newXact(pos Pos) *XactNode {
 	return n
 }
 
-func (n *XactNode) add(i item) {
-	n.items = append(n.items, i)
-}
-
 func (n *XactNode) String() string {
-	msg := []string{n.Date.Format("2016-01-02")}
+	msg := []string{n.Date.Format("2006-01-02")}
 	if n.IsPending {
 		msg = append(msg, "!")
 	}
@@ -192,27 +206,84 @@ func (n *XactNode) newPosting(pos Pos) *PostingNode {
 type PostingNode struct {
 	NodeType
 	Pos
-	tr    *Tree
-	items []item
+	tr *Tree
 
+	AccountPreSpace   string
 	Account           string
-	AmountExpr        string
-	Amount            string
+	AccountPostSpace  string // if non-empty, this must always be two spaces, one space and one tab, one tab, or more whitespace, as per specs.
+	Amount            *AmountNode
 	BalanceAssertion  string
 	BalanceAssignment string
+	Price             *AmountNode
+	PriceIsForWhole   bool // false = per unit (@); true = price for the whole (@@), meaningful only if `Price` is defined.
+	LotDate           time.Time
+	LotPrice          *AmountNode
+	NotePreSpace      string
 	Note              string
-	Price             string
-	PriceWhole        string
-	LotDate           string
-	LotPrice          string
 }
 
 func (n *PostingNode) String() string {
-	msg := []string{"    ", n.Account, n.Amount, n.AmountExpr}
+	msg := []string{n.AccountPreSpace, n.Account, n.AccountPostSpace, n.Amount.String()}
+	// TODO: add the other things in here...
 	if n.Note != "" {
-		msg = append(msg, n.Note)
+		msg = append(msg, n.NotePreSpace, n.Note)
 	}
-	return fmt.Sprintf(textFormat, strings.Join(msg, " "))
+	return fmt.Sprintf(textFormat, strings.Join(msg, ""))
 }
 
 func (n *PostingNode) tree() *Tree { return n.tr }
+
+/** PostingNode - Postings to transactions **/
+
+type AmountNode struct {
+	NodeType
+	Pos
+	tr *Tree
+
+	Raw       string // Raw representation of the amount, like "- CAD  100.20", with spacing and all. Will be used for printing unless empty, in which case the string will be reconstructed based on the other values herein.
+	Quantity  string
+	Negative  bool
+	Commodity string
+	ValueExpr string // Mutually exclusive with "Quantity". Expression, to be evaluated by some engine..
+}
+
+func (t *Tree) newAmount() *AmountNode {
+	return &AmountNode{tr: t, NodeType: NodeAmount}
+}
+
+func (n *AmountNode) String() string {
+	if n == nil {
+		return ""
+	}
+	if n.Raw != "" {
+		return n.Raw
+	}
+	if n.ValueExpr != "" {
+		return fmt.Sprintf("(%s)", n.ValueExpr)
+	}
+	out := n.Quantity
+	if n.Negative {
+		out = "-" + n.Quantity
+	}
+	if n.Commodity != "" {
+		out += " " + n.Commodity
+	}
+	return out
+}
+
+func (n *AmountNode) tree() *Tree { return n.tr }
+
+func (n *AmountNode) next(t *Tree) item {
+	it := t.next()
+	if n.Pos == 0 {
+		n.Pos = it.pos
+	}
+	n.Raw += it.val
+	return it
+}
+
+func (n *AmountNode) space(t *Tree) {
+	if it := t.peek(); it.typ == itemSpace {
+		n.next(t)
+	}
+}

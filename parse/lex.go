@@ -3,6 +3,7 @@ package parse
 // TODO: sync with the latest implementation here:
 // https://github.com/ledger/ledger4/blob/master/ledger-parse/Ledger/Parser/Text.hs
 // hledger: https://github.com/simonmichael/hledger/blob/master/hledger-lib/Hledger/Utils/Parse.hs
+// https://github.com/ledger/ledger/blob/next/src/textual.cc as per JohnW, is the end reference.
 
 import (
 	"fmt"
@@ -30,9 +31,11 @@ const (
 	itemError itemType = iota // error occurred; value is text of error
 	itemEOF
 	itemString
-	itemNote // comments for postings
+	itemNote    // comments for postings
 	itemComment // top-level Journal comments
 	itemDate
+	itemLotDate
+	itemLotPrice
 	itemSpace
 	itemEOL
 	itemText
@@ -89,7 +92,10 @@ var label = map[itemType]string{
 	itemEOF:                "itemEOF",
 	itemString:             "itemString",
 	itemNote:               "itemNote",
+	itemComment:            "itemComment",
 	itemDate:               "itemDate",
+	itemLotDate:            "itemLotDate",
+	itemLotPrice:           "itemLotPrice",
 	itemSpace:              "itemSpace",
 	itemEOL:                "itemEOL",
 	itemText:               "itemText",
@@ -214,6 +220,7 @@ func (l *lexer) errorf(format string, args ...interface{}) stateFn {
 // Called by the parser, not in the lexing goroutine.
 func (l *lexer) nextItem() item {
 	item := <-l.items
+	//debug(fmt.Sprintf("Reading item %s", item))
 	l.lastPos = item.pos
 	return item
 }
@@ -298,6 +305,15 @@ Loop:
 					l.errorf("missing filename after 'include'")
 					return nil
 				}
+			case word == "P":
+			case r == 'P':
+				if !isSpace(l.peek()) {
+					return l.errorf("directive 'P' must be followed by a space")
+				}
+				l.emitSpaces()
+
+				return lexPriceDirective
+
 			case word == "end":
 				l.emit(itemEnd)
 				l.emitSpaces()
@@ -314,62 +330,14 @@ Loop:
 	return lexJournal
 }
 
-func (l *lexer) atTerminator() bool {
-	r := l.peek()
-	if isSpace(r) || isEndOfLine(r) {
-		return true
-	}
-	return false
+func lexPriceDirective(l *lexer) stateFn {
+	return l.errorf("price directive not yet supported")
 }
 
 func lexPeriodicXact(l *lexer) stateFn {
 	l.emitSpaces()
 	l.emitStringNote()
 	return lexPostings
-}
-
-func (l *lexer) emitStringNote() {
-Loop:
-	for {
-		switch r := l.next(); {
-		case r == ';':
-			l.backup()
-			if l.current() != "" {
-				l.emit(itemString)
-			}
-			l.next() // skip that ';' again..
-			l.scanNote()
-			break Loop
-		case isEndOfLine(r):
-			l.backup()
-			if l.current() != "" {
-				l.emit(itemString)
-			}
-			break Loop
-		case r == eof:
-			l.backup()
-			if l.current() != "" {
-				l.emit(itemString)
-			}
-			break Loop
-		default:
-			continue
-		}
-	}
-	return
-}
-
-func (l *lexer) scanNote() {
-	for {
-		switch r := l.next(); {
-		case isEndOfLine(r) || r == eof:
-			l.backup()
-			if l.current() != "" {
-				l.emit(itemNote)
-			}
-			return
-		}
-	}
 }
 
 func lexAutomatedXact(l *lexer) stateFn {
@@ -443,7 +411,6 @@ func (l *lexer) emitSpaces() bool {
 	return true
 }
 
-
 func (l *lexer) emitStringToEOL() bool {
 	if !l.scanStringToEOL() {
 		return false
@@ -464,9 +431,7 @@ func (l *lexer) scanStringToEOL() bool {
 Loop:
 	for {
 		switch r := l.peek(); {
-		case isEndOfLine(r):
-			break Loop
-		case r == eof:
+		case isEndOfLine(r) || r == eof:
 			break Loop
 		default:
 			l.next()
@@ -476,6 +441,49 @@ Loop:
 		return false
 	}
 	return true
+}
+
+func (l *lexer) emitNote() {
+	for {
+		switch r := l.next(); {
+		case isEndOfLine(r) || r == eof:
+			l.backup()
+			if l.current() != "" {
+				l.emit(itemNote)
+			}
+			return
+		}
+	}
+}
+
+func (l *lexer) emitStringNote() {
+Loop:
+	for {
+		switch r := l.next(); {
+		case r == ';':
+			l.backup()
+			if l.current() != "" {
+				l.emit(itemString)
+			}
+			l.emitNote()
+			break Loop
+		case isEndOfLine(r):
+			l.backup()
+			if l.current() != "" {
+				l.emit(itemString)
+			}
+			break Loop
+		case r == eof:
+			l.backup()
+			if l.current() != "" {
+				l.emit(itemString)
+			}
+			break Loop
+		default:
+			continue
+		}
+	}
+	return
 }
 
 // scanAccountName scans until a spacer ("  " or " \t" or "\t " or "\t")
@@ -556,6 +564,9 @@ Loop:
 		case r == '!':
 			l.emit(itemExclamation)
 			l.emitSpaces()
+		case isComment(r):
+			l.backup()
+			l.emitNote()
 		case unicode.IsLetter(r):
 			if !l.scanAccountName() {
 				return nil
@@ -600,27 +611,38 @@ func lexPostingValues(l *lexer) stateFn {
 			l.errorf("expected matching ']' for lot date, got %#U", l.next())
 			return nil
 		}
-		l.emit(itemDate)
+		l.emit(itemLotDate)
 	case r == '{':
+		// TODO: this should support a full "amount" to be specified,
+		// so "- 123 USD", not only a quantity.
+		// We should split this function `lexPostingValues` into `lexAmount`
+		// which would only handle the amounts, so we could feed it more than once.
 		l.next()
-		if !l.emitQuantity() {
+		if !l.scanQuantity() {
 			return nil
 		}
 		if !l.accept("}") {
-			l.errorf("expected matching ']' for lot date, got %#U", l.next())
+			l.errorf("expected matching '}' for lot price, got %#U", l.next())
 			return nil
 		}
+		l.emit(itemLotPrice)
+		// TODO: currently no support for '(' lot_note ')'..
 	case isSpace(r):
 		l.emitSpaces()
 	case isEndOfLine(r):
 		return lexPostings
 	case r == eof:
 		return lexPostings
+	case r == ';':
+		l.emitNote()
 	case isCommodity(r):
 		if !l.scanCommodity() {
 			return nil
 		}
 		l.emit(itemCommodity)
+	default:
+		l.errorf("unexpected character in posting values: %#U", r)
+		return nil
 	}
 	return lexPostingValues
 	/*
@@ -704,6 +726,8 @@ func (l *lexer) emitPrices() bool {
 	}
 	l.emitSpaces()
 
+	// TODO: implement the whole amount expression parser here.. not just a quantity.
+
 	return l.emitQuantity()
 }
 
@@ -767,13 +791,20 @@ func (l *lexer) emitAmountExpr() bool {
 // scientific notation, complex numbers, etc.. Negativity is picked up
 // by itemNeg by the caller.
 func (l *lexer) emitQuantity() bool {
+	if !l.scanQuantity() {
+		return false
+	}
+	l.emit(itemQuantity)
+	return true
+}
+
+func (l *lexer) scanQuantity() bool {
 	for {
 		switch r := l.next(); {
 		case unicode.IsDigit(r):
 		case r == '.' || r == ',':
 		case r == ' ' || r == '}' || isEndOfLine(r) || r == eof:
 			l.backup()
-			l.emit(itemQuantity)
 			return true
 		default:
 			l.errorf("invalid character in amount: %#U", r)
@@ -782,9 +813,20 @@ func (l *lexer) emitQuantity() bool {
 	}
 }
 
+func (l *lexer) atTerminator() bool {
+	r := l.peek()
+	if isSpace(r) || isEndOfLine(r) {
+		return true
+	}
+	return false
+}
+
 // isCommodity reports whether r is a valid commodity character, like
 // "U" from "USD", '"' like "pine apples" or "$" et al.
 func isCommodity(r rune) bool {
+	if r == ';' {
+		return false
+	}
 	if unicode.IsGraphic(r) {
 		return true
 	}
