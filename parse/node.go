@@ -157,7 +157,6 @@ type XactNode struct {
 	Pos
 	tr *Tree
 
-	XactPreSpace  string
 	Date          time.Time
 	EffectiveDate time.Time
 	Description   string

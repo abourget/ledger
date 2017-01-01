@@ -68,7 +68,6 @@ outputs:
     {
       "NodeType": 2,
       "Pos": 21,
-      "XactPreSpace": "",
       "Date": "2016-09-09T00:00:00Z",
       "EffectiveDate": "2016-09-10T00:00:00Z",
       "Description": "Kentucky Friends Beef      ",
@@ -135,7 +134,6 @@ outputs:
     {
       "NodeType": 2,
       "Pos": 227,
-      "XactPreSpace": "",
       "Date": "2016-09-09T00:00:00Z",
       "EffectiveDate": "0001-01-01T00:00:00Z",
       "Description": "Payee",
@@ -194,7 +192,6 @@ outputs:
     {
       "NodeType": 2,
       "Pos": 387,
-      "XactPreSpace": "",
       "Date": "2016-09-10T00:00:00Z",
       "EffectiveDate": "0001-01-01T00:00:00Z",
       "Description": "Desc",

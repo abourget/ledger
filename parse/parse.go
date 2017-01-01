@@ -155,12 +155,13 @@ func (t *Tree) parsePostings(x *XactNode) {
 	for {
 		switch it := t.peek(); it.typ {
 		case itemSpace:
-			t.next()
+			preSpace := t.next()
 			// This is posting
 			switch it := t.peek(); it.typ {
 			case itemAccountName:
 				t.next()
 				posting = x.newPosting(it.pos)
+				posting.AccountPreSpace = preSpace.val
 				posting.Account = it.val
 				t.parsePosting(posting)
 
@@ -273,6 +274,8 @@ func (t *Tree) parsePosting(p *PostingNode) {
 
 func (t *Tree) parseAmount() (amount *AmountNode) {
 	amount = t.newAmount()
+
+	amount.space(t)
 
 	// TODO: implement detection of value expressions
 	// https://github.com/ledger/ledger/blob/next/doc/grammar.y#L149-L155
