@@ -280,5 +280,5 @@ References
 ----------
 
 * The lexer is heavily based on Go's `text/template`, on which this great talk is based (and which inspired me): https://www.youtube.com/watch?v=HxaD_trXwRE
-* https://github.com/howeyc/ledger for a simple Go implementation
+* https://github.com/howeyc/ledger for a simpler Go parser, but with some other features.
 * http://plaintextaccounting.org/ for more fun about Ledger files
