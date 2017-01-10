@@ -208,6 +208,8 @@ type PostingNode struct {
 	Pos
 	tr *Tree
 
+	IsPending         bool
+	IsCleared         bool
 	AccountPreSpace   string
 	Account           string
 	AccountPostSpace  string // if non-empty, this must always be two spaces, one space and one tab, one tab, or more whitespace, as per specs.

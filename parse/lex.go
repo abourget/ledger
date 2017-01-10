@@ -51,7 +51,7 @@ const (
 	itemRightParen
 	itemNeg        // '-'
 	itemQuantity   // "123.1234", with optional decimals. No scientific notation, complex, imaginary, etc..
-	itemAmountExpr // "(123 + 234)"
+	itemValueExpr // "(123 + 234)"
 	itemTilde
 	itemPeriodExpr
 	itemDot // to form numbers, with itemInteger + optionally: itemDot + itemInteger
@@ -111,7 +111,7 @@ var label = map[itemType]string{
 	itemRightParen:         "itemRightParen",
 	itemNeg:                "itemNeg",
 	itemQuantity:           "itemQuantity",
-	itemAmountExpr:         "itemAmountExpr",
+	itemValueExpr:         "itemValueExpr",
 	itemTilde:              "itemTilde",
 	itemPeriodExpr:         "itemPeriodExpr",
 	itemDot:                "itemDot",
@@ -335,12 +335,14 @@ func lexPriceDirective(l *lexer) stateFn {
 }
 
 func lexPeriodicXact(l *lexer) stateFn {
+	// TODO: support those things...
 	l.emitSpaces()
 	l.emitStringNote()
 	return lexPostings
 }
 
 func lexAutomatedXact(l *lexer) stateFn {
+	// TODO: support those things...
 	l.emitSpaces()
 	l.emitStringNote()
 	return lexPostings
@@ -543,19 +545,22 @@ func lexPostings(l *lexer) stateFn {
 
 Loop:
 	for {
-		switch r := l.next(); {
+		r := l.next()
+		if expectIndent {
+			if isSpace(r) {
+				l.emitSpaces()
+				break Loop
+			}
+			l.backup()
+			return lexJournal
+		}
+
+		switch {
 		case isEndOfLine(r):
 			expectIndent = true
 			l.emit(itemEOL)
 			continue
 		case r == eof:
-			l.backup()
-			return lexJournal
-		case expectIndent:
-			if isSpace(r) {
-				l.emitSpaces()
-				break Loop
-			}
 			l.backup()
 			return lexJournal
 		case r == '*':
@@ -585,7 +590,7 @@ func lexPostingValues(l *lexer) stateFn {
 	switch {
 	case r == '(':
 		l.next()
-		if !l.emitAmountExpr() {
+		if !l.emitValueExpr() {
 			return nil
 		}
 	case r == '=':
@@ -767,8 +772,8 @@ func (l *lexer) scanDate() bool {
 	}
 }
 
-// emitAmountExpr reads until last unbound ')'
-func (l *lexer) emitAmountExpr() bool {
+// emitValueExpr reads until last unbound ')'
+func (l *lexer) emitValueExpr() bool {
 	var parenCount int
 	for {
 		switch r := l.next(); {
@@ -776,8 +781,8 @@ func (l *lexer) emitAmountExpr() bool {
 			parenCount++
 		case r == ')':
 			parenCount--
-			if parenCount == 0 {
-				l.emit(itemAmountExpr)
+			if parenCount < 0 {
+				l.emit(itemValueExpr)
 				return true
 			}
 		case isEndOfLine(r) || r == eof:

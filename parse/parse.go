@@ -157,15 +157,9 @@ func (t *Tree) parsePostings(x *XactNode) {
 		case itemSpace:
 			preSpace := t.next()
 			// This is posting
-			switch it := t.peek(); it.typ {
-			case itemAccountName:
-				t.next()
-				posting = x.newPosting(it.pos)
-				posting.AccountPreSpace = preSpace.val
-				posting.Account = it.val
-				t.parsePosting(posting)
+			it := t.peek()
 
-			case itemNote:
+			if it.typ == itemNote {
 				t.next()
 				if posting == nil {
 					// attach to the XactMode
@@ -178,7 +172,13 @@ func (t *Tree) parsePostings(x *XactNode) {
 					posting.Note = posting.Note + "\n" + it.val
 				}
 				t.expect(itemEOL, "comment")
+				continue
 			}
+
+			posting = x.newPosting(it.pos)
+			posting.AccountPreSpace = preSpace.val
+
+			t.parsePosting(posting)
 
 		default:
 			return
@@ -187,6 +187,25 @@ func (t *Tree) parsePostings(x *XactNode) {
 }
 
 func (t *Tree) parsePosting(p *PostingNode) {
+	switch it := t.peek(); it.typ {
+	case itemAsterisk:
+		t.next()
+		p.IsCleared = true
+		t.peekNonSpace()
+	case itemExclamation:
+		t.next()
+		p.IsPending = true
+		t.peekNonSpace()
+	}
+
+	switch it := t.peek(); it.typ {
+	case itemAccountName:
+		t.next()
+		p.Account = it.val
+	default:
+		t.unexpected(it, "posting")
+	}
+
 	switch it := t.peek(); it.typ {
 	case itemSpace:
 		t.next()
@@ -279,11 +298,14 @@ func (t *Tree) parseAmount() (amount *AmountNode) {
 
 	// TODO: implement detection of value expressions
 	// https://github.com/ledger/ledger/blob/next/doc/grammar.y#L149-L155
-
 	switch it := t.peek(); it.typ {
 	case itemNeg:
 		amount.next(t)
 		amount.Negative = true
+	case itemValueExpr:
+		it = amount.next(t)
+		amount.ValueExpr = it.val
+		return amount
 	case itemEqual:
 		return nil
 	}

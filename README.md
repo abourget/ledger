@@ -267,11 +267,14 @@ Shortcomings
 
 This implementation has a few limitations compared to the C++ version:
 
-* It does not yet support all top-level constructs, like "account", "alias", "P", "D", "year" / "Y", etc.. Most of those will be simple additions.
-* It does not yet read or parses tags
+* It does not yet support all top-level constructs, like "account",
+  "alias", "P", "D", "year" / "Y", etc.. Most of those should be
+  simple to implement.
+* It does not yet understand tags. They are only considered comments.
 * It does not yet implement the `value_expr` language that allows you
   to do complex math computations directly in the postings of your
-  transactions.
+  transactions. It merely store the string text of the expression,
+  PROVIDED it is enclosed in parenthesis "()".
 * Also note that the current implementation does not validate any
   balances. It merely acts on the text of the file.
 
@@ -279,6 +282,6 @@ This implementation has a few limitations compared to the C++ version:
 References
 ----------
 
-* The lexer is heavily based on Go's `text/template`, on which this great talk is based (and which inspired me): https://www.youtube.com/watch?v=HxaD_trXwRE
+* The lexer is heavily based on Go's `text/template`. Also this talk by Rob Pike inspired me: https://www.youtube.com/watch?v=HxaD_trXwRE
 * https://github.com/howeyc/ledger for a simpler Go parser, but with some other features.
 * http://plaintextaccounting.org/ for more fun about Ledger files
