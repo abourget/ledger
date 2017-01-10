@@ -235,6 +235,11 @@ func (t *Tree) parsePosting(p *PostingNode) {
 	a := t.parseAmount()
 	p.Amount = a
 
+	var lastSpace string
+	if it := t.peek(); it.typ == itemSpace {
+		lastSpace = it.val
+	}
+
 	// Parse optional prices '@' and '@@'
 	if it := t.peekNonSpace(); it.typ == itemAt || it.typ == itemDoubleAt {
 		t.next()
@@ -250,6 +255,10 @@ func (t *Tree) parsePosting(p *PostingNode) {
 		p.Price = a
 	}
 
+	if it := t.peek(); it.typ == itemSpace {
+		lastSpace = it.val
+	}
+
 	// Handle "= AMOUNT"
 	if it := t.peekNonSpace(); it.typ == itemEqual {
 		t.next()
@@ -261,11 +270,19 @@ func (t *Tree) parsePosting(p *PostingNode) {
 		}
 	}
 
+	if it := t.peek(); it.typ == itemSpace {
+		lastSpace = it.val
+	}
+
 	if it := t.peekNonSpace(); it.typ == itemLotPrice {
 		t.next()
 		p.LotPrice = t.newAmount()
 		p.LotPrice.Quantity = strings.Trim(it.val, "{}")
 		p.LotPrice.Pos = it.pos
+	}
+
+	if it := t.peek(); it.typ == itemSpace {
+		lastSpace = it.val
 	}
 
 	if it := t.peekNonSpace(); it.typ == itemLotDate {
@@ -280,7 +297,11 @@ func (t *Tree) parsePosting(p *PostingNode) {
 
 	if it := t.peek(); it.typ == itemSpace {
 		t.next()
-		p.NotePreSpace = it.val
+		lastSpace = it.val
+	}
+
+	if lastSpace != "" {
+		p.NotePreSpace = lastSpace
 	}
 
 	if it := t.peek(); it.typ == itemNote {

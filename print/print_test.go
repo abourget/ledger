@@ -1,33 +1,38 @@
 package print
 
 import (
-    "testing"
+	"bytes"
+	"testing"
 
-    "github.com/stretchr/testify/assert"
+	"github.com/abourget/ledger/parse"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestPrint(t *testing.T) {
-    tests := []struct{
-        in string
-        out string
-    }{
-        {
+	tests := []struct {
+		in  string
+		out string
+	}{
+		{
 			`
 2007-09-09 Hello ; World
   A  20$
-  B
+  B  ; Hello world
 `,
 			`
 2007-09-09 Hello ; World
     A                  20$
     B
-`
+`,
 		},
-    }
+	}
 
-    for _, test := range tests {
-		assert.NoError(parse.New(test.in).Parse())
-        res := New((test.in)
-        assert.Equal(t, test.out, res)
-    }
+	for _, test := range tests {
+		tree := parse.New("filename", test.in)
+		assert.NoError(t, tree.Parse())
+		buf := &bytes.Buffer{}
+		assert.NoError(t, New(tree).Print(buf))
+		assert.Equal(t, test.out, buf.String())
+	}
 }
