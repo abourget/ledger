@@ -8,10 +8,13 @@ import (
 	"github.com/abourget/ledger/parse"
 )
 
-func funcsPlainXact(minimumAccountWidth int) template.FuncMap {
+func funcsPlainXact(minimumAccountWidth, prefixWidth int) template.FuncMap {
 	return template.FuncMap{
 		"posting_account_pre_space": func(node *parse.XactNode, post *parse.PostingNode) string {
-			return node.Postings[0].AccountPreSpace
+			if prefixWidth == 0 {
+				return node.Postings[0].AccountPreSpace
+			}
+			return strings.Repeat(" ", prefixWidth)
 		},
 		"posting_account_post_space": func(node *parse.XactNode, post *parse.PostingNode) string {
 			var longestAccountName int
@@ -73,6 +76,13 @@ func funcsPlainXact(minimumAccountWidth int) template.FuncMap {
 		},
 		"to_date": func(t time.Time) string {
 			return t.Format("2006-01-02")
+		},
+		"comment_returns": func(node *parse.XactNode, input string) string {
+			width := prefixWidth
+			if width == 0 {
+				width = len(node.Postings[0].AccountPreSpace)
+			}
+			return strings.Replace(input, "\n", "\n"+strings.Repeat(" ", width), -1)
 		},
 	}
 }

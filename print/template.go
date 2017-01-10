@@ -5,7 +5,7 @@ var (
 {{- end}}{{ if .IsPending }} ! {{end}}
 {{- if .IsCleared }} * {{end}}
 {{- with .Code }} ({{ .Code }}) {{end -}}
-{{ .Description }}{{ with .Note }}{{ .NotePreSpace }}{{.Note}}
+{{ .Description }}{{ with .Note }}{{ .NotePreSpace }}{{ comment_returns . .Note }}
 {{- end}}
 
 {{- $node := . -}}
@@ -21,7 +21,7 @@ var (
 {{- end}}{{ if not .LotDate.IsZero }} [{{ to_date . }}]
 {{- end}}{{ with .Price }} {{ if .PriceIsForWhole }}@@{{else}}@{{end}} {{ amount . }}
 {{- end}}{{ with .BalanceAssertion }} = {{ amount . }}
-{{- end}}{{ if ne .Note "" }}{{.NotePreSpace}}{{.Note}}
+{{- end}}{{ if ne .Note "" }}{{.NotePreSpace}}{{ comment_returns $node .Note }}
 {{- end}}{{end}}
 `
 )

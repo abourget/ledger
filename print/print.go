@@ -15,12 +15,14 @@ type Printer struct {
 	tree *parse.Tree
 
 	MinimumAccountWidth int
+	PostingsIndent      int
 }
 
 func New(tree *parse.Tree) *Printer {
 	return &Printer{
 		tree:                tree,
 		MinimumAccountWidth: 48,
+		PostingsIndent:      0,
 	}
 }
 
@@ -31,7 +33,7 @@ func (p *Printer) Print(buf *bytes.Buffer) error {
 		return errors.New("parse tree is empty (Root is nil)")
 	}
 
-	plainXact, err := template.New("plain_xact").Funcs(funcsPlainXact(p.MinimumAccountWidth)).Parse(tplPlainXact)
+	plainXact, err := template.New("plain_xact").Funcs(funcsPlainXact(p.MinimumAccountWidth, p.PostingsIndent)).Parse(tplPlainXact)
 	if err != nil {
 		return err
 	}
