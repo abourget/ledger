@@ -49,8 +49,8 @@ const (
 	itemIdentifier
 	itemLeftParen
 	itemRightParen
-	itemNeg        // '-'
-	itemQuantity   // "123.1234", with optional decimals. No scientific notation, complex, imaginary, etc..
+	itemNeg       // '-'
+	itemQuantity  // "123.1234", with optional decimals. No scientific notation, complex, imaginary, etc..
 	itemValueExpr // "(123 + 234)"
 	itemTilde
 	itemPeriodExpr
@@ -111,7 +111,7 @@ var label = map[itemType]string{
 	itemRightParen:         "itemRightParen",
 	itemNeg:                "itemNeg",
 	itemQuantity:           "itemQuantity",
-	itemValueExpr:         "itemValueExpr",
+	itemValueExpr:          "itemValueExpr",
 	itemTilde:              "itemTilde",
 	itemPeriodExpr:         "itemPeriodExpr",
 	itemDot:                "itemDot",
@@ -627,7 +627,7 @@ func lexPostingValues(l *lexer) stateFn {
 			return nil
 		}
 		if !l.accept("}") {
-			l.errorf("expected matching '}' for lot price, got %#U", l.next())
+			l.errorf("expected matching '}' for lot price, got %#U, don't specify commodity here", l.next())
 			return nil
 		}
 		l.emit(itemLotPrice)
@@ -702,6 +702,11 @@ func (l *lexer) scanCommodity() bool {
 			if r2 == eof || isEndOfLine(r2) {
 				l.errorf("unexpected end of escape sequence")
 				return false
+			}
+		case unicode.IsDigit(r):
+			if !quotesOpen {
+				l.backup()
+				return true
 			}
 		case r == '"':
 			if quotesOpen {
@@ -806,9 +811,9 @@ func (l *lexer) emitQuantity() bool {
 func (l *lexer) scanQuantity() bool {
 	for {
 		switch r := l.next(); {
-		case unicode.IsDigit(r):
-		case r == '.' || r == ',':
-		case r == ' ' || r == '}' || isEndOfLine(r) || r == eof:
+		case unicode.IsDigit(r) || r == '.' || r == ',':
+			// consume...
+		case r == '\t' || r == ' ' || r == '}' || isEndOfLine(r) || r == eof || isCommodity(r):
 			l.backup()
 			return true
 		default:

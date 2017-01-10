@@ -20,6 +20,55 @@ back the files to disk.
 **Longer term goal**: do the mathematical computations of the original
 Ledger program.
 
+Installation
+============
+
+Have _Go_ installed (from https://golang.org/dl), then run:
+
+```bash
+go get -u github.com/abourget/ledger/cmd/ledgerfmt
+```
+
+Emacs bindings are pending at the original https://github.com/ledger/ledger repo (in a PR).
+
+`ledgerfmt`
+-----------
+
+Input:
+
+```ledger
+2016/01/01=2016.02/02 Tx
+  Account1:Hello World     10.00$    @   12.23 USD  ; Note 7 flames
+  Other                    (123 USD)  ; Note
+
+2016/01/01 !Tx
+  Account1:Hello World          $10.00 [2017/01/01]  ; Then comment
+  ! Other  ; Comment here
+  ; Comment there
+
+2017/01/01 * Tx
+ Account1:Hello World        - 10.00 $
+ Other                   (10.00 $ * 2)
+
+```
+
+reformats to:
+
+```ledger
+2016-01-01 = 2016-02-02Tx
+    Account1:Hello World              10.00 $ @ 12.23 USD  ; Note 7 flames
+    Other                             (123 USD)  ; Note
+
+2016-01-01 ! Tx
+    Account1:Hello World              10.00 $ [2017-01-01]  ; Then comment
+    ! Other; Comment here
+    ; Comment there
+
+2017-01-01 * Tx
+    Account1:Hello World              -10.00 $
+    Other                             (10.00 $ * 2)
+```
+
 
 `ledger2json`
 -------------

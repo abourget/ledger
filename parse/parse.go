@@ -370,6 +370,8 @@ func (t *Tree) parseAmount() (amount *AmountNode) {
 		}
 		amount.next(t)
 		amount.Quantity = it.val
+	case itemLotDate:
+
 	default:
 		t.unexpected(it, "amount")
 	}

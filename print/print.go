@@ -22,7 +22,7 @@ func New(tree *parse.Tree) *Printer {
 	return &Printer{
 		tree:                tree,
 		MinimumAccountWidth: 48,
-		PostingsIndent:      0,
+		PostingsIndent:      4,
 	}
 }
 

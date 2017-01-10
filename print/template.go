@@ -18,8 +18,8 @@ var (
 {{- with .BalanceAssertion }}= {{ amount . }}
 {{- end}}{{ with .Amount }}{{ amount . }}
 {{- end}}{{ with .LotPrice }} { {{- amount . -}} }
-{{- end}}{{ if not .LotDate.IsZero }} [{{ to_date . }}]
-{{- end}}{{ with .Price }} {{ if .PriceIsForWhole }}@@{{else}}@{{end}} {{ amount . }}
+{{- end}}{{ if not .LotDate.IsZero }} [{{ to_date .LotDate }}]
+{{- end}}{{ if .Price }} {{ if .PriceIsForWhole }}@@{{else}}@{{end}} {{ amount .Price }}
 {{- end}}{{ with .BalanceAssertion }} = {{ amount . }}
 {{- end}}{{ if ne .Note "" }}{{.NotePreSpace}}{{ comment_returns $node .Note }}
 {{- end}}{{end}}
