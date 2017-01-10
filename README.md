@@ -6,17 +6,16 @@ an abstract syntax tree (a full programmatic representation of the
 file), to be able to tweak some parts programmatically, and then write
 back the files to disk.
 
-* `ledger2json` is the first use of this library. It parses your
-  Ledger file and outputs a `.json` file, which you can manipulate
-  with any software.
+* `ledgerfmt`, similar to `gofmt`, parses the input file, indents and
+  aligns according to conventions, and outputs the file back, without
+  any semantic changes or interpretation of the data.
+
+* `ledger2json` parses your Ledger file and outputs a `.json` file,
+  which you can manipulate with any software.
 
 * `json2ledger` will read the same file, and produce a .ledger file,
   properly formatted (not yet implemented)
 
-* `ledgerfmt` will be similar to `gofmt` in that it parses the input
-  file, indents and aligns according to conventions, and outputs the
-  file back, without any semantic changes or interpretation of the
-  data. (not yet implemented)
 
 **Longer term goal**: do the mathematical computations of the original
 Ledger program.
@@ -274,7 +273,7 @@ This implementation has a few limitations compared to the C++ version:
 * It does not yet implement the `value_expr` language that allows you
   to do complex math computations directly in the postings of your
   transactions. It merely store the string text of the expression,
-  PROVIDED it is enclosed in parenthesis "()".
+  PROVIDED it is enclosed in parenthesis, e.g. `(123 + 2 * 3 USD)`.
 * Also note that the current implementation does not validate any
   balances. It merely acts on the text of the file.
 
