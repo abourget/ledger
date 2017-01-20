@@ -1,11 +1,11 @@
 package print
 
 var (
-	tplPlainXact = `{{ to_date .Date }}{{ if not .EffectiveDate.IsZero }} = {{ to_date .EffectiveDate }}
-{{- end}}{{ if .IsPending }} ! {{end}}
-{{- if .IsCleared }} * {{end}}
-{{- with .Code }}({{ . }}){{end -}}
-{{ .Description }}{{ with .Note }}{{ .NotePreSpace }}{{ comment_returns . .Note }}
+	tplPlainXact = `{{ to_date .Date }}{{ if not .EffectiveDate.IsZero }} = {{ to_date .EffectiveDate }}{{ end -}}
+{{- if .IsPending }} !{{end -}}
+{{- if .IsCleared }} *{{end -}}
+{{- with .Code }} ({{ . }}){{end -}}
+{{ printf " " }}{{ .Description }}{{ with .Note }}{{ .NotePreSpace }}{{ comment_returns . .Note }}
 {{- end}}
 
 {{- $node := . -}}

@@ -30,7 +30,7 @@ func TestPrint(t *testing.T) {
  Other                   (10.00 $ * 2)
 `,
 			`
-2016-01-01 = 2016-02-02Tx
+2016-01-01 = 2016-02-02 Tx
     Account1:Hello World              10.00 $ @ 12.23 USD  ; Note 7 flames
     Other                             (123 USD)  ; Note
 

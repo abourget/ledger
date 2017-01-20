@@ -388,6 +388,7 @@ func lexPlainXactDescription(l *lexer) stateFn {
 		l.scanStringUntil(')')
 	case r == ')':
 		l.emit(itemRightParen)
+		l.emitSpaces()
 	case isEndOfLine(r):
 		l.errorf("unexpected end-of-line")
 		return nil
