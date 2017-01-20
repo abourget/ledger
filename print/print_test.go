@@ -15,7 +15,8 @@ func TestPrint(t *testing.T) {
 		out string
 	}{
 		{
-			`
+			`; comment
+; second
 2016/01/01=2016.02/02 Tx
   Account1:Hello World     10.00$    @   12.23 USD  ; Note 7 flames
   Other                    (123 USD)  ; Note
@@ -29,7 +30,8 @@ func TestPrint(t *testing.T) {
  Account1:Hello World        - 10.00 $
  Other                   (10.00 $ * 2)
 `,
-			`
+			`; comment
+; second
 2016-01-01 = 2016-02-02 Tx
     Account1:Hello World              10.00 $ @ 12.23 USD  ; Note 7 flames
     Other                             (123 USD)  ; Note

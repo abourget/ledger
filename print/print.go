@@ -46,7 +46,7 @@ func (p *Printer) Print(buf *bytes.Buffer) error {
 				return err
 			}
 		case *parse.CommentNode:
-			_, err := buf.WriteString(node.Comment)
+			_, err := buf.WriteString(node.Comment + "\n")
 			if err != nil {
 				return err
 			}
