@@ -25,7 +25,7 @@ func TestPrint(t *testing.T) {
   ! Other  ; Comment here
   ; Comment there
 
-2017/01/01 * Tx
+2017/01/01 * (kode) Tx
  Account1:Hello World        - 10.00 $
  Other                   (10.00 $ * 2)
 `,
@@ -39,7 +39,7 @@ func TestPrint(t *testing.T) {
     ! Other; Comment here
     ; Comment there
 
-2017-01-01 * Tx
+2017-01-01 * (kode) Tx
     Account1:Hello World              -10.00 $
     Other                             (10.00 $ * 2)
 `,
