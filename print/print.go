@@ -41,24 +41,19 @@ func (p *Printer) Print(buf *bytes.Buffer) error {
 	for _, nodeIface := range tree.Root.Nodes {
 		switch node := nodeIface.(type) {
 		case *parse.XactNode:
-
-			if err = plainXact.Execute(buf, node); err != nil {
-				return err
-			}
+			err = plainXact.Execute(buf, node)
 		case *parse.CommentNode:
-			_, err := buf.WriteString(node.Comment + "\n")
-			if err != nil {
-				return err
-			}
-
+			_, err = buf.WriteString(node.Comment + "\n")
 		case *parse.SpaceNode:
-			_, err := buf.WriteString(node.Space)
-			if err != nil {
-				return err
-			}
-
+			_, err = buf.WriteString(node.Space)
+		case *parse.DirectiveNode:
+			_, err = buf.WriteString(node.Raw)
 		default:
 			return fmt.Errorf("unprintable node type %T", nodeIface)
+		}
+
+		if err != nil {
+			return err
 		}
 	}
 	return nil
