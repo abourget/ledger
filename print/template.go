@@ -5,7 +5,7 @@ var (
 {{- if .IsPending }} !{{end -}}
 {{- if .IsCleared }} *{{end -}}
 {{- with .Code }} ({{ . }}){{end -}}
-{{ printf " " }}{{ .Description }}{{ with .Note }}{{ .NotePreSpace }}{{ comment_returns . .Note }}
+{{ printf " " }}{{ .Description }}{{ if .Note }}{{ .NotePreSpace }}{{ comment_returns . .Note }}
 {{- end}}
 
 {{- $node := . -}}
