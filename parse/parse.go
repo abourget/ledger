@@ -51,17 +51,7 @@ func (t *Tree) Parse() (err error) {
 		case itemError:
 			t.errorf(it.val)
 		case itemSpace, itemEOL:
-			spaceVal := it.val
-		EatSpaces:
-			for {
-				switch it := t.peek(); it.typ {
-				case itemSpace, itemEOL:
-					t.next()
-					spaceVal += it.val
-				default:
-					break EatSpaces
-				}
-			}
+			spaceVal := it.val + t.eatSpaces()
 			t.Root.add(t.newSpace(it.pos, spaceVal))
 		case itemComment:
 			t.Root.add(t.newComment(it))
@@ -79,11 +69,35 @@ func (t *Tree) Parse() (err error) {
 			x := t.newXact(it.pos)
 			x.Date = txDate
 			t.parseXact(x)
+		case itemInclude:
+			d := t.newDirective(it.pos, "include")
+			d.Raw = d.Directive + t.eatSpaces()
+			if it = t.peek(); it.typ != itemString {
+				t.unexpected(it, "include args, expected a string")
+			}
+			t.next()
+			d.Raw += it.val
+			d.Args = it.val
 		default:
 			t.errorf("unsupported top-level directive")
 		}
 	}
 	return nil
+}
+
+func (t *Tree) eatSpaces() string {
+	spaceVal := ""
+EatSpaces:
+	for {
+		switch it := t.peek(); it.typ {
+		case itemSpace, itemEOL:
+			t.next()
+			spaceVal += it.val
+		default:
+			break EatSpaces
+		}
+	}
+	return spaceVal
 }
 
 func (t *Tree) parseXact(x *XactNode) {

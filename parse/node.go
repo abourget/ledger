@@ -58,16 +58,18 @@ const (
 	NodeComment
 	NodeSpace
 	NodeAmount
+	NodeDirective
 )
 
 var nodeLabel = map[NodeType]string{
-	NodeJournal: "NodeJournal",
-	NodeList:    "NodeList",
-	NodeXact:    "NodeXact",
-	NodePosting: "NodePosting",
-	NodeComment: "NodeComment",
-	NodeSpace:   "NodeSpace",
-	NodeAmount:  "NodeAmount",
+	NodeJournal:   "NodeJournal",
+	NodeList:      "NodeList",
+	NodeXact:      "NodeXact",
+	NodePosting:   "NodePosting",
+	NodeComment:   "NodeComment",
+	NodeSpace:     "NodeSpace",
+	NodeAmount:    "NodeAmount",
+	NodeDirective: "NodeDirective",
 }
 
 /** ListNode **/
@@ -289,3 +291,28 @@ func (n *AmountNode) space(t *Tree) {
 		n.next(t)
 	}
 }
+
+type DirectiveNode struct {
+	NodeType
+	Pos
+	tr *Tree
+
+	Raw       string
+	Directive string
+	Args      string
+}
+
+func (t *Tree) newDirective(p Pos, directive string) *DirectiveNode {
+	d := &DirectiveNode{NodeType: NodeDirective, Pos: p, tr: t, Directive: directive}
+	t.Root.add(d)
+	return d
+}
+
+func (n *DirectiveNode) String() string {
+	str := n.Directive
+	if n.Args != "" {
+		str += " " + n.Args
+	}
+	return str
+}
+func (n *DirectiveNode) tree() *Tree { return n.tr }
