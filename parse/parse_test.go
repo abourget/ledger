@@ -23,6 +23,7 @@ func TestParse(t *testing.T) {
 2016/09/09 ! (Kode) Payee
   ; Transaction notes
   Expenses:Misc    20.00 CAD = 700.00 CAD
+  Expenses:Tip     50.00 USD @ 100.00 CAD
   Assets:Cash  ; Woah, not sure
  ; Here again
   ; And yet another note for this posting.
@@ -70,6 +71,10 @@ func TestParse(t *testing.T) {
 	// Transaction 2
 	xact, ok = tree.Root.Nodes[5].(*XactNode)
 	require.True(t, ok)
+	assert.Equal(t, "Expenses:Tip", xact.Postings[1].Account)
+	assert.Equal(t, "50.00 USD", xact.Postings[1].Amount.Raw)
+	assert.Equal(t, " 100.00 CAD", xact.Postings[1].Price.Raw)
+	assert.Equal(t, "100.00", xact.Postings[1].Price.Quantity)
 
 	assert.False(t, xact.IsCleared)
 	assert.True(t, xact.IsPending)

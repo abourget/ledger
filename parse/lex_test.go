@@ -117,6 +117,27 @@ var lexTests = []lexTest{
 		tEOL,
 		tEOF,
 	}},
+	{"transaction with price", "2016/09/09 Payee\n Account  - 20.00 CAD @ USD 40.00", []item{
+		{itemDate, 0, "2016/09/09"},
+		{itemSpace, 0, " "},
+		{itemString, 0, "Payee"},
+		tEOL,
+		{itemSpace, 0, " "},
+		{itemAccountName, 0, "Account"},
+		{itemSpace, 0, "  "},
+		{itemNeg, 0, "-"},
+		{itemSpace, 0, " "},
+		{itemQuantity, 0, "20.00"},
+		{itemSpace, 0, " "},
+		{itemCommodity, 0, "CAD"},
+		{itemSpace, 0, " "},
+		{itemAt, 0, "@"},
+		{itemSpace, 0, " "},
+		{itemCommodity, 0, "USD"},
+		{itemSpace, 0, " "},
+		{itemQuantity, 0, "40.00"},
+		tEOF,
+	}},
 
 	// errors
 

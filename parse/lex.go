@@ -737,9 +737,28 @@ func (l *lexer) emitPrices() bool {
 	}
 	l.emitSpaces()
 
-	// TODO: implement the whole amount expression parser here.. not just a quantity.
+	for {
+		r := l.peek()
 
-	return l.emitQuantity()
+		switch {
+		case r == '-':
+			l.next()
+			l.emit(itemNeg)
+		case unicode.IsDigit(r):
+			if !l.emitQuantity() {
+				return false
+			}
+		case isSpace(r):
+			l.emitSpaces()
+		case isCommodity(r):
+			if !l.scanCommodity() {
+				return false
+			}
+			l.emit(itemCommodity)
+		default:
+			return true
+		}
+	}
 }
 
 // scanDate scans dates in whatever format.
