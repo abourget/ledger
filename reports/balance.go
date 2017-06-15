@@ -2,6 +2,8 @@ package reports
 
 import (
 	"math/big"
+	"sort"
+	"strings"
 
 	"github.com/xconstruct/ledger-utils/journal"
 )
@@ -40,21 +42,28 @@ func Balance(txs []*journal.Transaction) *BalanceReport {
 
 	for _, tx := range txs {
 		for _, p := range tx.Postings() {
-			b.account(p.Node.Account).Add(p.Amount())
+			b.account(p.Account()).Add(p.Amount())
 		}
 	}
 
-	// accs := make([]*Account, 0)
-	// for _, acc := range b.Accounts {
-	// 	accs = append(accs, acc)
-	// }
-	// sort.Slice(accs, func(i, j int) bool {
-	// 	a, b := accs[i].Name, accs[j].Name
-	// 	if strings.Count(a, ":") > strings.Count(b, ":") {
-	// 		return true
-	// 	}
-	// 	return a < b
-	// })
+	accs := make([]*Account, 0)
+	for _, acc := range b.Accounts {
+		accs = append(accs, acc)
+	}
+	sort.Slice(accs, func(i, j int) bool {
+		a, b := accs[i].Name, accs[j].Name
+		if strings.Count(a, ":") > strings.Count(b, ":") {
+			return true
+		}
+		return a < b
+	})
+	for _, acc := range accs {
+		if base := journal.BaseAccount(acc.Name); base != "" {
+			for _, am := range acc.Amounts {
+				b.account(base).Add(am)
+			}
+		}
+	}
 
 	return b
 }

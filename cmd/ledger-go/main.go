@@ -21,7 +21,7 @@ func must(err error) {
 
 func main() {
 	flag.Parse()
-	cmd := flag.Arg(1)
+	cmd := flag.Arg(0)
 
 	if *fname == "" {
 		*fname = os.Getenv("LEDGER_FILE")
@@ -36,7 +36,9 @@ func main() {
 
 	switch {
 	case cmd == "balance" || cmd == "bal":
-		bal := reports.Balance(j.Transactions())
+		txs, err := j.Transactions()
+		must(err)
+		bal := reports.Balance(txs)
 		for _, acc := range bal.Accounts {
 			for _, am := range acc.Amounts {
 				fmt.Println(acc.Name, " ", am)
