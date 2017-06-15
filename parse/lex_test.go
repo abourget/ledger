@@ -138,6 +138,12 @@ var lexTests = []lexTest{
 		{itemQuantity, 0, "40.00"},
 		tEOF,
 	}},
+	{"price directive", `P 2017/06/15 USD 50.00 CAD`, []item{
+		{itemPrice, 0, "P"},
+		{itemSpace, 0, " "},
+		{itemString, 0, "2017/06/15 USD 50.00 CAD"},
+		tEOF,
+	}},
 
 	// errors
 

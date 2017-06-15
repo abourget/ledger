@@ -78,6 +78,15 @@ func (t *Tree) Parse() (err error) {
 			t.next()
 			d.Raw += it.val
 			d.Args = it.val
+		case itemPrice:
+			d := t.newDirective(it.pos, "P")
+			d.Raw = d.Directive + t.eatSpaces()
+			if it = t.peek(); it.typ != itemString {
+				t.unexpected(it, "P args, expected a string")
+			}
+			t.next()
+			d.Raw += it.val
+			d.Args = it.val
 		default:
 			t.errorf("unsupported top-level directive")
 		}

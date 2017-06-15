@@ -306,10 +306,10 @@ Loop:
 					return nil
 				}
 			case word == "P":
-			case r == 'P':
 				if !isSpace(l.peek()) {
 					return l.errorf("directive 'P' must be followed by a space")
 				}
+				l.emit(itemPrice)
 				l.emitSpaces()
 
 				return lexPriceDirective
@@ -331,7 +331,9 @@ Loop:
 }
 
 func lexPriceDirective(l *lexer) stateFn {
-	return l.errorf("price directive not yet supported")
+	// TODO: parse individual arguments
+	l.emitStringToEOL()
+	return lexJournal
 }
 
 func lexPeriodicXact(l *lexer) stateFn {
