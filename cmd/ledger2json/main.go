@@ -6,7 +6,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/abourget/ledger/parse"
+	"github.com/xconstruct/ledger/parse"
 )
 
 func main() {

@@ -5,7 +5,7 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/abourget/ledger/parse"
+	"github.com/xconstruct/ledger/parse"
 )
 
 func funcsPlainXact(minimumAccountWidth, prefixWidth int) template.FuncMap {

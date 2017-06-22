@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"text/template"
 
-	"github.com/abourget/ledger/parse"
+	"github.com/xconstruct/ledger/parse"
 )
 
 // Printer formats the AST of a Ledger file into a properly formatted
