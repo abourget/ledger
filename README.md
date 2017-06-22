@@ -1,15 +1,15 @@
 [![Build](https://img.shields.io/travis/xconstruct/ledger.svg?style=flat-square)](https://travis-ci.org/xconstruct/ledger)
-[![API Documentation](https://img.shields.io/badge/api-GoDoc-blue.svg?style=flat-square)](https://godoc.org/github.com/xconstruct/ledger/journal)
 [![Coverage](https://img.shields.io/coveralls/xconstruct/ledger.svg?style=flat-square)](https://coveralls.io/github/xconstruct/ledger)
+[![API Documentation](https://img.shields.io/badge/api-GoDoc-blue.svg?style=flat-square)](https://godoc.org/github.com/xconstruct/ledger/journal)
 [![BSD License](https://img.shields.io/badge/license-BSD-blue.svg?style=flat-square)](http://opensource.org/licenses/BSD)
 
 Go Ledger
 ================
 
 This is a fork of the excellent ledger parser of
-(abourget)[https://github.com/abourget/ledger] that fixes a few issues and
+[abourget](https://github.com/abourget/ledger) that fixes a few issues and
 aims to provides a high-level API to interact with
-(Ledger)[http://plaintextaccounting.org] files.
+[Ledger](http://plaintextaccounting.org) files.
 
 The underlying library can parse relatively complex Ledger files, and provide
 an abstract syntax tree (a full programmatic representation of the
