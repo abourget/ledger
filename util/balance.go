@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/xconstruct/ledger-utils/journal"
+	"github.com/xconstruct/ledger/journal"
 )
 
 type BalanceReport struct {
