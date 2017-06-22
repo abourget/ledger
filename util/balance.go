@@ -1,4 +1,4 @@
-package reports
+package util
 
 import (
 	"math/big"

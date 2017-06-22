@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/xconstruct/ledger-utils/journal"
-	"github.com/xconstruct/ledger-utils/reports"
+	"github.com/xconstruct/ledger-utils/util"
 )
 
 var fname = flag.String("f", "", "ledger file")
@@ -38,7 +38,7 @@ func main() {
 	case cmd == "balance" || cmd == "bal":
 		txs, err := j.Transactions()
 		must(err)
-		bal := reports.Balance(txs)
+		bal := util.Balance(txs)
 		for _, acc := range bal.Accounts {
 			for _, am := range acc.Amounts {
 				fmt.Println(acc.Name, " ", am)

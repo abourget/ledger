@@ -5,7 +5,7 @@ import (
 	"math/big"
 	"strings"
 
-	"github.com/abourget/ledger/parse"
+	"github.com/xconstruct/ledger/parse"
 )
 
 var ErrInvalidAmount = errors.New("Unexpected type for amount given")
@@ -64,7 +64,7 @@ type Posting struct {
 }
 
 func (p *Posting) Account() string {
-	return strings.Trim(p.Node.Account, "()")
+	return strings.Trim(p.Node.Account, "()[]")
 }
 
 func (p *Posting) SetAmount(commodity string, amount interface{}) error {
