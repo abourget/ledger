@@ -1,6 +1,5 @@
 [![Build](https://img.shields.io/travis/xconstruct/ledger.svg?style=flat-square)](https://travis-ci.org/xconstruct/ledger)
 [![API Documentation](https://img.shields.io/badge/api-GoDoc-blue.svg?style=flat-square)](https://godoc.org/github.com/xconstruct/ledger/journal)
-
 [![BSD License](https://img.shields.io/badge/license-BSD-blue.svg?style=flat-square)](http://opensource.org/licenses/BSD)
 
 Go Ledger
