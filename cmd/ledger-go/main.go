@@ -1,3 +1,4 @@
+// Ledger-Go is a Go implementation of the Ledger cli tool.
 package main
 
 import (

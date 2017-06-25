@@ -1,3 +1,4 @@
+// Package filter provides a simple tool to filter ledger transactions
 package filter
 
 import (

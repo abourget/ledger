@@ -1,3 +1,4 @@
+// Package parse implements a low-level parser of ledger files.
 package parse
 
 import (

@@ -1,3 +1,4 @@
+// Package lpath provides support for manipulating colon-separated account names.
 package lpath
 
 import "strings"

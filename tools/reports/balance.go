@@ -1,3 +1,4 @@
+// Package reports provides simple aggregation and reporting of ledger files.
 package reports
 
 import (

@@ -1,3 +1,4 @@
+// Package print provides a low-level writer for ledger files.
 package print
 
 import (

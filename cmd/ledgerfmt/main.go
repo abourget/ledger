@@ -1,3 +1,4 @@
+// ledgerfmt pretty-prints ledger files.
 package main
 
 import (

@@ -1,3 +1,4 @@
+// ledger2json parses a ledger file and returns a JSON representation.
 package main
 
 import (

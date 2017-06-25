@@ -1,3 +1,4 @@
+// Package journal provides a simple interface for accessing ledger files.
 package journal
 
 import (

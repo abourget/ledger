@@ -1,3 +1,4 @@
+// Budgeteer is an experimental monthly budget calculator.
 package main
 
 import (

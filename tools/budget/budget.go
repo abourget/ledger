@@ -1,3 +1,4 @@
+// Package budget provides an experimental budget calculator.
 package budget
 
 import (
