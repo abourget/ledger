@@ -2,32 +2,37 @@ package journal
 
 import "math/big"
 
-type Amounts struct {
-	ByCommodity map[string]*big.Rat
+type Account struct {
+	Name    string
+	Amounts map[string]*Amount
 }
 
-func NewAmounts() *Amounts {
-	return &Amounts{
-		ByCommodity: make(map[string]*big.Rat),
+func (a Account) String() string {
+	s := ""
+	for _, am := range a.Amounts {
+		if s != "" {
+			s += "\n"
+		}
+		s += am.String()
 	}
+	return s + "  " + a.Name
 }
 
-func (a *Amounts) Add(commodity string, quantity string) {
-	v, ok := a.ByCommodity[commodity]
+func (a *Account) Add(am *Amount) {
+	accAmount, ok := a.Amounts[am.Commodity]
 	if !ok {
-		v = big.NewRat(0, 1)
-		a.ByCommodity[commodity] = v
+		accAmount = &Amount{
+			Commodity: am.Commodity,
+			Quantity:  big.NewRat(0, 1),
+		}
+		a.Amounts[am.Commodity] = accAmount
 	}
-	change, ok := big.NewRat(0, 1).SetString(quantity)
-	if !ok {
-		panic("Cannot parse quantity: " + quantity)
-	}
-	v.Add(v, change)
+	accAmount.Quantity.Add(accAmount.Quantity, am.Quantity)
 }
 
-func (a *Amounts) Get(commodity string) *big.Rat {
-	if v, ok := a.ByCommodity[commodity]; ok {
-		return v
+func NewAccount(name string) *Account {
+	return &Account{
+		Name:    name,
+		Amounts: make(map[string]*Amount),
 	}
-	return big.NewRat(0, 1)
 }

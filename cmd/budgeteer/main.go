@@ -28,14 +28,9 @@ func main() {
 
 	switch {
 	case cmd == "balance" || cmd == "bal":
-		since := time.Date(2017, 6, 1, 0, 0, 0, 0, time.Local)
-		bal, err := budget.Balance(j, since)
+		bal, err := budget.Balance(j, time.Time{})
 		must(err)
-		for _, acc := range bal.Accounts {
-			for _, am := range acc.Amounts {
-				fmt.Println(acc.Name, " ", am)
-			}
-		}
+		must(bal.Print(os.Stdout))
 	default:
 		fmt.Println("Unknown command:", cmd)
 		os.Exit(1)

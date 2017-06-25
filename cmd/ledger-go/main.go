@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"regexp"
 	"time"
 
 	"github.com/xconstruct/ledger/journal"
@@ -36,14 +37,14 @@ func main() {
 
 	switch {
 	case cmd == "balance" || cmd == "bal":
+		filter := regexp.MustCompile("(?i)" + flag.Arg(1))
+
 		txs, err := j.Transactions()
 		must(err)
-		bal := reports.Balance(txs)
-		for _, acc := range bal.Accounts {
-			for _, am := range acc.Amounts {
-				fmt.Println(acc.Name, " ", am)
-			}
-		}
+		bal := reports.BalanceFiltered(txs, func(acc string) bool {
+			return filter.MatchString(acc)
+		})
+		must(bal.Print(os.Stdout))
 	case cmd == "testadd":
 		tx := j.AddTransaction(time.Now(), "This is a test transaction")
 		tx.NewPosting("Expenses:Testing").SetAmount("EUR", 120)

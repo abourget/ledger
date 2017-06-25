@@ -18,12 +18,17 @@ func Balance(j *journal.Journal, since time.Time) (*reports.BalanceReport, error
 		return nil, err
 	}
 
+	sinceNotGiven := since.IsZero()
+
 	accounts := make(map[string]bool)
 	budget := FindBudgetTxs(txs)
 	for _, b := range budget {
 		bdate := b.Node.Date
 		for _, p := range b.Postings() {
 			accounts[p.Account()] = true
+		}
+		if sinceNotGiven && (since.IsZero() || since.After(bdate)) {
+			since = bdate
 		}
 
 		now := time.Now()
@@ -46,14 +51,8 @@ func Balance(j *journal.Journal, since time.Time) (*reports.BalanceReport, error
 
 	txs, err = j.Transactions()
 	txs = filter.New(txs, filter.Since(since), filter.Not(filter.Note("budget:"))).Slice()
-	bal := reports.Balance(txs)
-	bal2 := &reports.BalanceReport{
-		Accounts: make(map[string]*reports.Account),
-	}
-	for acc := range accounts {
-		if a, ok := bal.Accounts[acc]; ok {
-			bal2.Accounts[acc] = a
-		}
-	}
-	return bal2, err
+	bal := reports.BalanceFiltered(txs, func(acc string) bool {
+		return accounts[acc]
+	})
+	return bal, err
 }
