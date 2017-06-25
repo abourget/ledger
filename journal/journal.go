@@ -68,13 +68,13 @@ func (j *Journal) IncludeJournal(path string) (*Journal, error) {
 	return inc, nil
 }
 
-func (j *Journal) AddTransaction(date time.Time, note string) *Transaction {
+func (j *Journal) AddTransaction(date time.Time, desc string) *Transaction {
 	sn := &parse.SpaceNode{NodeType: parse.NodeSpace}
 	sn.Space = "\n"
 
 	n := &parse.XactNode{NodeType: parse.NodeXact}
 	n.Date = date
-	n.Note = note
+	n.Description = desc
 
 	j.tree.Root.Nodes = append(j.tree.Root.Nodes, sn, n)
 	return &Transaction{n}

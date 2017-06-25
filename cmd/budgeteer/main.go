@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/xconstruct/ledger/journal"
-	"github.com/xconstruct/ledger/tools/reports"
+	"github.com/xconstruct/ledger/tools/budget"
 )
 
 var fname = flag.String("f", "", "ledger file")
@@ -23,32 +23,19 @@ func main() {
 	flag.Parse()
 	cmd := flag.Arg(0)
 
-	if *fname == "" {
-		*fname = os.Getenv("LEDGER_FILE")
-		if *fname == "" {
-			fmt.Println("Please specify an existing journal file with -f or LEDGER_FILE")
-			os.Exit(1)
-		}
-	}
-
 	j, err := journal.Open(*fname)
 	must(err)
 
 	switch {
 	case cmd == "balance" || cmd == "bal":
-		txs, err := j.Transactions()
+		since := time.Date(2017, 6, 1, 0, 0, 0, 0, time.Local)
+		bal, err := budget.Balance(j, since)
 		must(err)
-		bal := reports.Balance(txs)
 		for _, acc := range bal.Accounts {
 			for _, am := range acc.Amounts {
 				fmt.Println(acc.Name, " ", am)
 			}
 		}
-	case cmd == "testadd":
-		tx := j.AddTransaction(time.Now(), "This is a test transaction")
-		tx.NewPosting("Expenses:Testing").SetAmount("EUR", 120)
-		tx.NewPosting("Expenses:OtherTesting").SetAmount("EUR", -120)
-		must(j.SaveTo(*fname))
 	default:
 		fmt.Println("Unknown command:", cmd)
 		os.Exit(1)

@@ -1,4 +1,4 @@
-package util
+package reports
 
 import (
 	"math/big"
@@ -29,7 +29,10 @@ type Account struct {
 func (a *Account) Add(am *journal.Amount) {
 	accAmount, ok := a.Amounts[am.Commodity]
 	if !ok {
-		accAmount = &journal.Amount{am.Commodity, big.NewRat(0, 1)}
+		accAmount = &journal.Amount{
+			Commodity: am.Commodity,
+			Quantity:  big.NewRat(0, 1),
+		}
 		a.Amounts[am.Commodity] = accAmount
 	}
 	accAmount.Quantity.Add(accAmount.Quantity, am.Quantity)
