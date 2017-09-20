@@ -66,6 +66,10 @@ func (t *Tree) Parse() (err error) {
 		case itemComment:
 			t.Root.add(t.newComment(it))
 			t.expect(itemEOL, "comment")
+		case itemInclude:
+			path := t.expect(itemString, "include")
+			t.expect(itemEOL, "include")
+			t.Root.add(t.newInclude(it, path.val))
 		case itemEqual:
 			// Analyze an automated transaction
 		case itemTilde:
@@ -532,5 +536,5 @@ func appendComment(orig, new string) string {
 func parseDate(input string) (time.Time, error) {
 	stdSeparator := strings.Replace(strings.Replace(input, "/", "-", -1), ".", "-", -1)
 	undecorated := strings.Trim(stdSeparator, "[]") // from itemLotPrice
-	return time.ParseInLocation("2006-01-02", undecorated, time.UTC)
+	return time.ParseInLocation("2006-1-2", undecorated, time.UTC)
 }

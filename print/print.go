@@ -57,6 +57,12 @@ func (p *Printer) Print(buf *bytes.Buffer) error {
 				return err
 			}
 
+		case *parse.IncludeNode:
+			_, err := buf.WriteString("include " + node.IncludePath + "\n")
+			if err != nil {
+				return err
+			}
+
 		default:
 			return fmt.Errorf("unprintable node type %T", nodeIface)
 		}

@@ -600,14 +600,12 @@ func lexPostingValues(l *lexer) stateFn {
 	case r == '-':
 		l.next()
 		l.emit(itemNeg)
-	case unicode.IsDigit(r):
+	case unicode.IsDigit(r) || r == '.':
 		if !l.emitQuantity() {
 			return nil
 		}
 	case r == '@':
-		if !l.emitPrices() {
-			return nil
-		}
+		l.emitPrices()
 	case r == '[':
 		l.next()
 		if !l.scanDate() {
@@ -704,7 +702,7 @@ func (l *lexer) scanCommodity() bool {
 				l.errorf("unexpected end of escape sequence")
 				return false
 			}
-		case unicode.IsDigit(r):
+		case unicode.IsDigit(r) || r == ' ' || r == '-' || r == '.':
 			if !quotesOpen {
 				l.backup()
 				return true
@@ -714,11 +712,6 @@ func (l *lexer) scanCommodity() bool {
 				return true
 			}
 			quotesOpen = true
-		case r == ' ':
-			if !quotesOpen {
-				l.backup()
-				return true
-			}
 		case isEndOfLine(r) || r == eof:
 			l.backup()
 			return true
@@ -727,7 +720,7 @@ func (l *lexer) scanCommodity() bool {
 }
 
 // emitPrices analyzes the '@' and '@@' syntax in posting values.
-func (l *lexer) emitPrices() bool {
+func (l *lexer) emitPrices() {
 	l.next() // consume the @ which brought us here
 	if l.peek() == '@' {
 		l.next()
@@ -736,10 +729,6 @@ func (l *lexer) emitPrices() bool {
 		l.emit(itemAt)
 	}
 	l.emitSpaces()
-
-	// TODO: implement the whole amount expression parser here.. not just a quantity.
-
-	return l.emitQuantity()
 }
 
 // scanDate scans dates in whatever format.
@@ -758,17 +747,13 @@ func (l *lexer) scanDate() bool {
 				return false
 			}
 		case r == '.' || r == '-' || r == '/':
-			if fieldExpected != 0 {
-				l.errorf(dateError, r)
-				return false
-			}
 			if len(fields) == 0 {
 				l.errorf(dateError, r)
 				return false
 			}
 			fields = fields[1:]
 		default:
-			if fieldExpected != 0 || len(fields) != 1 {
+			if len(fields) != 1 {
 				l.errorf(dateError, r)
 				return false
 			}
