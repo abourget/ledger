@@ -605,9 +605,7 @@ func lexPostingValues(l *lexer) stateFn {
 			return nil
 		}
 	case r == '@':
-		if !l.emitPrices() {
-			return nil
-		}
+		l.emitPrices()
 	case r == '[':
 		l.next()
 		if !l.scanDate() {
@@ -722,7 +720,7 @@ func (l *lexer) scanCommodity() bool {
 }
 
 // emitPrices analyzes the '@' and '@@' syntax in posting values.
-func (l *lexer) emitPrices() bool {
+func (l *lexer) emitPrices() {
 	l.next() // consume the @ which brought us here
 	if l.peek() == '@' {
 		l.next()
@@ -731,10 +729,6 @@ func (l *lexer) emitPrices() bool {
 		l.emit(itemAt)
 	}
 	l.emitSpaces()
-
-	// TODO: implement the whole amount expression parser here.. not just a quantity.
-
-	return l.emitQuantity()
 }
 
 // scanDate scans dates in whatever format.

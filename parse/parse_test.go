@@ -89,7 +89,8 @@ func TestParseEdgeCases(t *testing.T) {
 2016/10/10 Desc 3
   A  $-12
   B  $.34
-  C
+  C  2 CAD @@ $56
+  Z
 `)
 	err := tree.Parse()
 	require.NoError(t, err)
@@ -111,6 +112,7 @@ func TestParseEdgeCases(t *testing.T) {
 	assert.Equal(t, "23 $", xact.Postings[1].Amount.Raw)
 	assert.Equal(t, "$", xact.Postings[1].Amount.Commodity)
 	assert.Equal(t, "23", xact.Postings[1].Amount.Quantity)
+	// XXX Do we really want to include leading spaces in Price.Raw?
 	assert.Equal(t, " 2 CAD", xact.Postings[1].Price.Raw)
 	assert.Equal(t, "CAD", xact.Postings[1].Price.Commodity)
 	assert.Equal(t, "2", xact.Postings[1].Price.Quantity)
@@ -139,11 +141,24 @@ func TestParseEdgeCases(t *testing.T) {
 	assert.Equal(t, true, xact.Postings[0].Amount.Negative)
 	assert.Equal(t, "12", xact.Postings[0].Amount.Quantity)
 	assert.Equal(t, "$", xact.Postings[0].Amount.Commodity)
+
 	assert.Equal(t, "B", xact.Postings[1].Account)
 	assert.Equal(t, "$.34", xact.Postings[1].Amount.Raw)
 	assert.Equal(t, false, xact.Postings[1].Amount.Negative)
 	assert.Equal(t, ".34", xact.Postings[1].Amount.Quantity)
 	assert.Equal(t, "$", xact.Postings[1].Amount.Commodity)
+
+	assert.Equal(t, "C", xact.Postings[2].Account)
+	assert.Equal(t, "2 CAD", xact.Postings[2].Amount.Raw)
+	assert.Equal(t, false, xact.Postings[2].Amount.Negative)
+	assert.Equal(t, "2", xact.Postings[2].Amount.Quantity)
+	assert.Equal(t, "CAD", xact.Postings[2].Amount.Commodity)
+	assert.Equal(t, true, xact.Postings[2].PriceIsForWhole)
+	// XXX Do we really want to include leading spaces in Price.Raw?
+	assert.Equal(t, " $56", xact.Postings[2].Price.Raw)
+	assert.Equal(t, false, xact.Postings[2].Price.Negative)
+	assert.Equal(t, "56", xact.Postings[2].Price.Quantity)
+	assert.Equal(t, "$", xact.Postings[2].Price.Commodity)
 
 	treeToJSON(tree)
 }
