@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"text/template"
 
 	"github.com/xconstruct/ledger/parse"
 )
@@ -34,15 +33,11 @@ func (p *Printer) Print(buf *bytes.Buffer) error {
 		return errors.New("parse tree is empty (Root is nil)")
 	}
 
-	plainXact, err := template.New("plain_xact").Funcs(funcsPlainXact(p.MinimumAccountWidth, p.PostingsIndent)).Parse(tplPlainXact)
-	if err != nil {
-		return err
-	}
-
 	for _, nodeIface := range tree.Root.Nodes {
+		var err error
 		switch node := nodeIface.(type) {
 		case *parse.XactNode:
-			err = plainXact.Execute(buf, node)
+			p.writePlainXact(buf, node)
 		case *parse.CommentNode:
 			_, err = buf.WriteString(node.Comment + "\n")
 		case *parse.SpaceNode:
