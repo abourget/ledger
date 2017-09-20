@@ -237,7 +237,7 @@ func lex(name, input string) *lexer {
 	l := &lexer{
 		name:  name,
 		input: input,
-		items: make(chan item),
+		items: make(chan item, 1000),
 	}
 	go l.run()
 	return l
