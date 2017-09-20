@@ -51,7 +51,7 @@ func funcsPlainXact(minimumAccountWidth, prefixWidth int) template.FuncMap {
 			if post.Amount != nil && post.Amount.ValueExpr != "" {
 				return spaceFunc(baseSpacing)
 			}
-			if post.Amount == nil && post.BalanceAssignment == nil && post.LotPrice == nil && post.LotDate.IsZero() && post.Price == nil {
+			if post.Amount == nil && post.BalanceAssignment == nil && post.LotPrice == nil && post.LotDate.IsZero() && post.Price == nil && post.Note == "" {
 				return ""
 			}
 
