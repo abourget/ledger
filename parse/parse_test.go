@@ -86,10 +86,14 @@ func TestParseEdgeCases(t *testing.T) {
 2016/09/10 Desc 2
   ! A      (23 CAD + 123 USD)
   ! B
+2016/10/10 Desc 3
+  A  $-12
+  B  $.34
+  C
 `)
 	err := tree.Parse()
 	require.NoError(t, err)
-	assert.Len(t, tree.Root.Nodes, 4)
+	assert.Len(t, tree.Root.Nodes, 5)
 
 	spaces, ok := tree.Root.Nodes[0].(*SpaceNode)
 	require.True(t, ok)
@@ -125,6 +129,21 @@ func TestParseEdgeCases(t *testing.T) {
 	assert.Equal(t, "B", xact.Postings[1].Account)
 	assert.Nil(t, xact.Postings[1].Amount)
 	assert.Nil(t, xact.Postings[1].Price)
+
+	xact, ok = tree.Root.Nodes[4].(*XactNode)
+	require.True(t, ok)
+
+	assert.Equal(t, "Desc 3", xact.Description)
+	assert.Equal(t, "A", xact.Postings[0].Account)
+	assert.Equal(t, "$-12", xact.Postings[0].Amount.Raw)
+	assert.Equal(t, true, xact.Postings[0].Amount.Negative)
+	assert.Equal(t, "12", xact.Postings[0].Amount.Quantity)
+	assert.Equal(t, "$", xact.Postings[0].Amount.Commodity)
+	assert.Equal(t, "B", xact.Postings[1].Account)
+	assert.Equal(t, "$.34", xact.Postings[1].Amount.Raw)
+	assert.Equal(t, false, xact.Postings[1].Amount.Negative)
+	assert.Equal(t, ".34", xact.Postings[1].Amount.Quantity)
+	assert.Equal(t, "$", xact.Postings[1].Amount.Commodity)
 
 	treeToJSON(tree)
 }

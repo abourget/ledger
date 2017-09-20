@@ -600,7 +600,7 @@ func lexPostingValues(l *lexer) stateFn {
 	case r == '-':
 		l.next()
 		l.emit(itemNeg)
-	case unicode.IsDigit(r):
+	case unicode.IsDigit(r) || r == '.':
 		if !l.emitQuantity() {
 			return nil
 		}
@@ -704,7 +704,7 @@ func (l *lexer) scanCommodity() bool {
 				l.errorf("unexpected end of escape sequence")
 				return false
 			}
-		case unicode.IsDigit(r):
+		case unicode.IsDigit(r) || r == ' ' || r == '-' || r == '.':
 			if !quotesOpen {
 				l.backup()
 				return true
@@ -714,11 +714,6 @@ func (l *lexer) scanCommodity() bool {
 				return true
 			}
 			quotesOpen = true
-		case r == ' ':
-			if !quotesOpen {
-				l.backup()
-				return true
-			}
 		case isEndOfLine(r) || r == eof:
 			l.backup()
 			return true
