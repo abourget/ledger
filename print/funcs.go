@@ -68,9 +68,13 @@ func funcsPlainXact(minimumAccountWidth, prefixWidth int) template.FuncMap {
 			if amount.Negative {
 				out += "-"
 			}
-			out += amount.Quantity
-			if amount.Commodity != "" {
-				out += " " + amount.Commodity
+			if amount.Commodity == "$" {
+				out += amount.Commodity + amount.Quantity
+			} else {
+				out += amount.Quantity
+				if amount.Commodity != "" {
+					out += " " + amount.Commodity
+				}
 			}
 			return out
 		},
