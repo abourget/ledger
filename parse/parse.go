@@ -234,6 +234,10 @@ func (t *Tree) parsePosting(p *PostingNode) {
 	case itemSpace:
 		t.next()
 		p.AccountPostSpace = it.val
+		if it := t.peek(); it.typ == itemEOL {
+			t.next()
+			return
+		}
 	case itemEOL:
 		t.next()
 		return

@@ -94,7 +94,7 @@ func TestParseEdgeCases(t *testing.T) {
 2016/10/10 Desc 3
   A  $-12
   B  $.34
-  C
+  CWithTrailingSpaces     
 `)
 	err := tree.Parse()
 	require.NoError(t, err)
