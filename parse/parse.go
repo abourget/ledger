@@ -66,6 +66,10 @@ func (t *Tree) Parse() (err error) {
 		case itemComment:
 			t.Root.add(t.newComment(it))
 			t.expect(itemEOL, "comment")
+		case itemInclude:
+			path := t.expect(itemString, "include")
+			t.expect(itemEOL, "include")
+			t.Root.add(t.newInclude(it, path.val))
 		case itemEqual:
 			// Analyze an automated transaction
 		case itemTilde:

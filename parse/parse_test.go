@@ -14,6 +14,8 @@ func TestParse(t *testing.T) {
 	tree := New("file.ledger", `
 ; Top level comment
 
+include foo.ledger
+
 2016/09/09 = 2016-09-10 * Kentucky Friends Beef      ; Never go back there
    ; Some more notes for the transaction
   Expenses:Restaurants    20.00 CAD
@@ -33,7 +35,7 @@ func TestParse(t *testing.T) {
 `)
 	err := tree.Parse()
 	require.NoError(t, err)
-	assert.Len(t, tree.Root.Nodes, 8)
+	assert.Len(t, tree.Root.Nodes, 10)
 
 	spc, ok := tree.Root.Nodes[0].(*SpaceNode)
 	require.True(t, ok)
@@ -47,8 +49,16 @@ func TestParse(t *testing.T) {
 	require.True(t, ok)
 	assert.Equal(t, "\n", spc.Space)
 
+	include, ok := tree.Root.Nodes[3].(*IncludeNode)
+	require.True(t, ok)
+	assert.Equal(t, "foo.ledger", include.IncludePath)
+
+	spc, ok = tree.Root.Nodes[4].(*SpaceNode)
+	require.True(t, ok)
+	assert.Equal(t, "\n", spc.Space)
+
 	// Transaction 1
-	xact, ok := tree.Root.Nodes[3].(*XactNode)
+	xact, ok := tree.Root.Nodes[5].(*XactNode)
 	require.True(t, ok)
 	assert.Equal(t, "Kentucky Friends Beef      ", xact.Description)
 	assert.Equal(t, "; Never go back there\n; Some more notes for the transaction", xact.Note)
@@ -63,12 +73,12 @@ func TestParse(t *testing.T) {
 	assert.Equal(t, xact.EffectiveDate, time.Date(2016, time.September, 10, 0, 0, 0, 0, time.UTC))
 
 	// Spacing
-	spaces, ok := tree.Root.Nodes[4].(*SpaceNode)
+	spaces, ok := tree.Root.Nodes[6].(*SpaceNode)
 	require.True(t, ok)
 	assert.Equal(t, "\n\n", spaces.Space)
 
 	// Transaction 2
-	xact, ok = tree.Root.Nodes[5].(*XactNode)
+	xact, ok = tree.Root.Nodes[7].(*XactNode)
 	require.True(t, ok)
 
 	assert.False(t, xact.IsCleared)

@@ -58,6 +58,7 @@ const (
 	NodeComment
 	NodeSpace
 	NodeAmount
+	NodeInclude
 )
 
 var nodeLabel = map[NodeType]string{
@@ -68,6 +69,7 @@ var nodeLabel = map[NodeType]string{
 	NodeComment: "NodeComment",
 	NodeSpace:   "NodeSpace",
 	NodeAmount:  "NodeAmount",
+	NodeInclude: "NodeInclude",
 }
 
 /** ListNode **/
@@ -149,6 +151,27 @@ func (t *Tree) newComment(i item) *CommentNode {
 
 func (n *CommentNode) String() string { return n.Comment }
 func (n *CommentNode) tree() *Tree    { return n.tr }
+
+/** IncludeNode **/
+
+// IncludeNode represents an include directive. We don't actually try to look at
+// the included file; we just keep around the path.
+type IncludeNode struct {
+	NodeType
+	Pos
+	tr *Tree
+
+	IncludePath string
+}
+
+func (t *Tree) newInclude(i item, includePath string) *IncludeNode {
+	return &IncludeNode{NodeType: NodeInclude, Pos: i.pos, tr: t, IncludePath: includePath}
+}
+
+func (n *IncludeNode) String() string {
+	return fmt.Sprintf("include %s", n.IncludePath)
+}
+func (n *IncludeNode) tree() *Tree { return n.tr }
 
 /** XactNode - Ledger Transactions **/
 
