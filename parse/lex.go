@@ -779,17 +779,13 @@ func (l *lexer) scanDate() bool {
 				return false
 			}
 		case r == '.' || r == '-' || r == '/':
-			if fieldExpected != 0 {
-				l.errorf(dateError, r)
-				return false
-			}
 			if len(fields) == 0 {
 				l.errorf(dateError, r)
 				return false
 			}
 			fields = fields[1:]
 		default:
-			if fieldExpected != 0 || len(fields) != 1 {
+			if len(fields) != 1 {
 				l.errorf(dateError, r)
 				return false
 			}
