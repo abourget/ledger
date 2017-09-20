@@ -38,7 +38,7 @@ func TestPrint(t *testing.T) {
 
 2016-01-01 ! Tx
     Account1:Hello World              10.00 $ [2017-01-01]  ; Then comment
-    ! Other; Comment here
+    ! Other                           ; Comment here
     ; Comment there
 
 2017-01-01 * (kode) Tx
