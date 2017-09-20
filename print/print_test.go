@@ -33,16 +33,16 @@ func TestPrint(t *testing.T) {
 			`; comment
 ; second
 2016-01-01 = 2016-02-02 Tx ; another comment
-    Account1:Hello World              10.00 $ @ 12.23 USD  ; Note 7 flames
+    Account1:Hello World              $10.00 @ 12.23 USD  ; Note 7 flames
     Other                             (123 USD)  ; Note
 
 2016-01-01 ! Tx
-    Account1:Hello World              10.00 $ [2017-01-01]  ; Then comment
+    Account1:Hello World              $10.00 [2017-01-01]  ; Then comment
     ! Other; Comment here
     ; Comment there
 
 2017-01-01 * (kode) Tx
-    Account1:Hello World              -10.00 $
+    Account1:Hello World              -$10.00
     Other                             (10.00 $ * 2)
 `,
 		},
