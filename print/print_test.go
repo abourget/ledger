@@ -2,6 +2,7 @@ package print
 
 import (
 	"bytes"
+	"fmt"
 	"testing"
 
 	"github.com/abourget/ledger/parse"
@@ -17,7 +18,7 @@ func TestPrint(t *testing.T) {
 		{
 			`; comment
 ; second
-2016/01/01=2016.02/02 Tx
+2016/01/01=2016.02/02 Tx  ; txn note
   Account1:Hello World     10.00$    @   12.23 USD  ; Note 7 flames
   Other                    (123 USD)  ; Note
 
@@ -32,7 +33,7 @@ func TestPrint(t *testing.T) {
 `,
 			`; comment
 ; second
-2016-01-01 = 2016-02-02 Tx
+2016-01-01 = 2016-02-02 Tx  ; txn note
     Account1:Hello World              $10.00 @ 12.23 USD  ; Note 7 flames
     Other                             (123 USD)  ; Note
 
@@ -56,5 +57,10 @@ func TestPrint(t *testing.T) {
 		printer.MinimumAccountWidth = 30
 		assert.NoError(t, printer.Print(buf))
 		assert.Equal(t, test.out, buf.String())
+		if test.out != buf.String() {
+			// It's difficult to see differences in assert's output.
+			fmt.Printf("expected:\n%s\n", test.out)
+			fmt.Printf("actual:\n%s\n", buf.String())
+		}
 	}
 }
