@@ -4,4 +4,4 @@ go:
 before_install:
   - go get github.com/mattn/goveralls
 script:
-  - goveralls --service=travis-ci --repotoken 4N3d1WjHVkpQwoIP1CjpwHeee2XBzlweS
+  - go test ./...
