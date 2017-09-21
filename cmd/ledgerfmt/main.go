@@ -20,6 +20,7 @@ func main() {
 
 	var source io.Reader
 	source = os.Stdin
+	var filename = "stdin"
 
 	inFile := flag.Arg(0)
 	if inFile != "" {
@@ -29,6 +30,7 @@ func main() {
 		}
 
 		source = sourceFile
+		filename = inFile
 		defer sourceFile.Close()
 	}
 
@@ -37,7 +39,7 @@ func main() {
 		log.Fatalln("Error reading input:", err)
 	}
 
-	t := parse.New("stdin", string(cnt))
+	t := parse.New(filename, string(cnt))
 	err = t.Parse()
 	if err != nil {
 		log.Fatalln("Parsing error:", err)

@@ -234,6 +234,10 @@ func (t *Tree) parsePosting(p *PostingNode) {
 	case itemSpace:
 		t.next()
 		p.AccountPostSpace = it.val
+		if it := t.peek(); it.typ == itemEOL {
+			t.next()
+			return
+		}
 	case itemEOL:
 		t.next()
 		return
@@ -557,5 +561,5 @@ func appendComment(orig, new string) string {
 func parseDate(input string) (time.Time, error) {
 	stdSeparator := strings.Replace(strings.Replace(input, "/", "-", -1), ".", "-", -1)
 	undecorated := strings.Trim(stdSeparator, "[]") // from itemLotPrice
-	return time.ParseInLocation("2006-01-02", undecorated, time.UTC)
+	return time.ParseInLocation("2006-1-2", undecorated, time.UTC)
 }
