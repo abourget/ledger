@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/xconstruct/ledger/parse"
+	"github.com/abourget/ledger/parse"
 )
 
 func accountLength(post *parse.PostingNode) int {

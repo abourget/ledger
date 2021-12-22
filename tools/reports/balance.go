@@ -7,8 +7,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/xconstruct/ledger/journal"
-	"github.com/xconstruct/ledger/lpath"
+	"github.com/abourget/ledger/journal"
+	"github.com/abourget/ledger/lpath"
 )
 
 type BalanceReport struct {

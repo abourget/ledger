@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/xconstruct/ledger/journal"
+	"github.com/abourget/ledger/journal"
 )
 
 type FilterFn func(tx *journal.Transaction) bool

@@ -5,7 +5,7 @@ import (
 	"math/big"
 	"strings"
 
-	"github.com/xconstruct/ledger/parse"
+	"github.com/abourget/ledger/parse"
 )
 
 var ErrInvalidAmount = errors.New("Unexpected type for amount given")

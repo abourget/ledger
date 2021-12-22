@@ -8,8 +8,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/xconstruct/ledger/journal"
-	"github.com/xconstruct/ledger/tools/budget"
+	"github.com/abourget/ledger/journal"
+	"github.com/abourget/ledger/tools/budget"
 )
 
 var fname = flag.String("f", "", "ledger file")

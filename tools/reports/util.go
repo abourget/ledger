@@ -3,7 +3,7 @@ package reports
 import (
 	"strings"
 
-	"github.com/xconstruct/ledger/journal"
+	"github.com/abourget/ledger/journal"
 )
 
 type formattedAccount struct {

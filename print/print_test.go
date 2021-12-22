@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/xconstruct/ledger/parse"
+	"github.com/abourget/ledger/parse"
 
 	"github.com/stretchr/testify/assert"
 )

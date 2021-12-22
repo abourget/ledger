@@ -9,8 +9,8 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/xconstruct/ledger/journal"
-	"github.com/xconstruct/ledger/tools/reports"
+	"github.com/abourget/ledger/journal"
+	"github.com/abourget/ledger/tools/reports"
 )
 
 var fname = flag.String("f", "", "ledger file")

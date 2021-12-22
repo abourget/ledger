@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/xconstruct/ledger/parse"
-	"github.com/xconstruct/ledger/print"
+	"github.com/abourget/ledger/parse"
+	"github.com/abourget/ledger/print"
 )
 
 type Journal struct {

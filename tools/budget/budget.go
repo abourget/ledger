@@ -4,9 +4,9 @@ package budget
 import (
 	"time"
 
-	"github.com/xconstruct/ledger/journal"
-	"github.com/xconstruct/ledger/tools/filter"
-	"github.com/xconstruct/ledger/tools/reports"
+	"github.com/abourget/ledger/journal"
+	"github.com/abourget/ledger/tools/filter"
+	"github.com/abourget/ledger/tools/reports"
 )
 
 func FindBudgetTxs(txs []*journal.Transaction) []*journal.Transaction {

@@ -10,8 +10,8 @@ import (
 	"os"
 	"sort"
 
-	"github.com/xconstruct/ledger/parse"
-	"github.com/xconstruct/ledger/print"
+	"github.com/abourget/ledger/parse"
+	"github.com/abourget/ledger/print"
 )
 
 var writeOutput = flag.Bool("w", false, "Write back to input file")
