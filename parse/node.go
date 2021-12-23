@@ -50,6 +50,10 @@ func (t NodeType) String() string {
 	return label
 }
 
+// func (t NodeType) MarshalJSON() ([]byte, error) {
+// 	return json.Marshal(t.String())
+// }
+
 const (
 	NodeJournal NodeType = iota
 	NodeList
@@ -59,6 +63,7 @@ const (
 	NodeSpace
 	NodeAmount
 	NodeDirective
+	NodeCommodity
 )
 
 var nodeLabel = map[NodeType]string{
@@ -70,6 +75,7 @@ var nodeLabel = map[NodeType]string{
 	NodeSpace:     "NodeSpace",
 	NodeAmount:    "NodeAmount",
 	NodeDirective: "NodeDirective",
+	NodeCommodity: "NodeCommodity",
 }
 
 /** ListNode **/
@@ -316,3 +322,24 @@ func (n *DirectiveNode) String() string {
 	return str
 }
 func (n *DirectiveNode) tree() *Tree { return n.tr }
+
+type CommodityNode struct {
+	NodeType
+	Pos
+	tr *Tree
+
+	Commodity string
+	Note      string
+	Format    string
+	NoMarket  bool
+	Alias     string
+	Default   bool
+}
+
+func (t *Tree) newCommodity(p Pos) *CommodityNode {
+	d := &CommodityNode{NodeType: NodeCommodity, Pos: p, tr: t}
+	t.Root.add(d)
+	return d
+}
+
+func (n *CommodityNode) tree() *Tree { return n.tr }

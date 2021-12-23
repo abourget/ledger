@@ -21,7 +21,11 @@ type item struct {
 
 func (i item) String() string {
 	val := fmt.Sprintf("%q", i.val)
-	return fmt.Sprintf("%s(%s)", label[i.typ], val)
+	lab, found := label[i.typ]
+	if !found {
+		lab = fmt.Sprintf("itemType=%d", i.typ)
+	}
+	return fmt.Sprintf("%s(%s)", lab, val)
 }
 
 // itemType identifies the type of lex items.
@@ -66,9 +70,17 @@ const (
 	itemKeyword
 	itemInclude
 	itemAccountKeyword
-	itemEnd
 	itemAlias
 	itemPrice
+
+	itemCommodityKeywordsStart
+	itemCommodityDirective
+	itemCommodityNomarket
+	itemCommodityDefault
+	itemCommodityFormat
+	itemCommodityNote
+	itemCommodityAlias
+	itemCommodityKeywordsEnd
 	// itemDef
 	// itemYear
 	// itemBucket
@@ -80,11 +92,19 @@ const (
 
 // key must contain anything after `itemKeyword` in the preceding list.
 var key = map[string]itemType{
-	"include": itemInclude,
-	"account": itemAccountKeyword,
-	"end":     itemEnd,
-	"alias":   itemAlias,
-	"P":       itemPrice,
+	"include":   itemInclude,
+	"commodity": itemCommodityDirective,
+	"account":   itemAccountKeyword,
+	"P":         itemPrice,
+	"alias":     itemAlias,
+}
+
+var commodityKey = map[string]itemType{
+	"nomarket": itemCommodityNomarket,
+	"default":  itemCommodityDefault,
+	"format":   itemCommodityFormat,
+	"note":     itemCommodityNote,
+	"alias":    itemCommodityAlias,
 }
 
 var label = map[itemType]string{
@@ -121,6 +141,12 @@ var label = map[itemType]string{
 	itemBeginAutomatedXact: "itemBeginAutomatedXact",
 	itemBeginPeriodicXact:  "itemBeginPeriodicXact",
 	itemBeginXact:          "itemBeginXact",
+	itemCommodityDirective: "itemCommodityDirective",
+	itemCommodityNomarket:  "itemCommodityNomarket",
+	itemCommodityDefault:   "itemCommodityDefault",
+	itemCommodityFormat:    "itemCommodityFormat",
+	itemCommodityNote:      "itemCommodityNote",
+	itemCommodityAlias:     "itemCommodityAlias",
 }
 
 const eof = -1
@@ -267,7 +293,7 @@ func lexJournal(l *lexer) stateFn {
 	case unicode.IsDigit(r):
 		l.backup()
 		return lexPlainXact
-	case isAlphaNumeric(r):
+	case isAlphaUnderscore(r):
 		l.backup()
 		return lexIdentifier
 	case isEndOfLine(r):
@@ -279,7 +305,7 @@ func lexJournal(l *lexer) stateFn {
 		l.emit(itemEOF)
 		return nil
 	default:
-		return l.errorf("unrecognized character in directive: %#U", r)
+		return l.errorf("unrecognized character in top-level construct: %#U", r)
 	}
 	return lexJournal
 }
@@ -291,46 +317,110 @@ Loop:
 		switch r := l.next(); {
 		case isAlphaNumeric(r):
 			// absorb.
+			if l.atTerminator() {
+				word := l.input[l.start:l.pos]
+				switch {
+				case word == "include":
+					return lexIncludeDirective
+				case word == "P":
+					return lexPriceDirective
+				case word == "commodity":
+					return lexCommodityDirectives
+				case key[word] > itemKeyword:
+					l.emit(key[word])
+				default:
+					return l.errorf("unexpected identifier '%s'", word)
+				}
+				break Loop
+			}
 		default:
-			l.backup()
-			word := l.input[l.start:l.pos]
-			if !l.atTerminator() {
-				return l.errorf("bad character %#U", r)
-			}
-			switch {
-			case word == "include":
-				l.emit(itemInclude)
-				l.emitSpaces()
-				if !l.emitStringToEOL() {
-					l.errorf("missing filename after 'include'")
-					return nil
-				}
-			case word == "P":
-				if !isSpace(l.peek()) {
-					return l.errorf("directive 'P' must be followed by a space")
-				}
-				l.emit(itemPrice)
-				l.emitSpaces()
-
-				return lexPriceDirective
-
-			case word == "end":
-				l.emit(itemEnd)
-				l.emitSpaces()
-				return lexIdentifier
-				// handle "alias", etc..
-			case key[word] > itemKeyword:
-				l.emit(key[word])
-			default:
-				l.emit(itemIdentifier)
-			}
-			break Loop
+			return l.errorf("bad character %#U", r)
 		}
 	}
 	return lexJournal
 }
 
+func lexCommodityDirectives(l *lexer) stateFn {
+	var expectIndent bool
+
+	l.emit(itemCommodityDirective)
+	l.emitSpaces()
+	if !l.scanCommodity() {
+		return nil
+	}
+	l.emit(itemCommodity)
+	if l.peek() == eof {
+		return lexJournal
+	}
+
+	//fmt.Println("NEXT")
+	for {
+		if expectIndent && !l.emitSpaces() {
+			//fmt.Println("MAM")
+			return lexJournal
+		}
+		expectIndent = false
+
+		r := l.next()
+
+		//fmt.Println("next", string(r), r)
+
+		switch {
+		case isEndOfLine(r):
+			expectIndent = true
+			l.emit(itemEOL)
+		case isSpace(r):
+			l.emitSpaces()
+		case isAlphaUnderscore(r):
+			//fmt.Println("alphanum", r)
+			if l.atTerminator() {
+				word := l.input[l.start:l.pos]
+
+				switch {
+				case word == "alias":
+					l.emit(itemCommodityAlias)
+					l.emitSpaces()
+					if !l.emitCommodity() {
+						return l.errorf("expected commodity for 'alias'")
+					}
+				case word == "format" || word == "note":
+					l.emit(commodityKey[word])
+					l.emitSpaces()
+					if !l.emitStringToEOL() {
+						return l.errorf("missing argument to '%s'", word)
+					}
+				case word == "nomarket" || word == "default":
+					l.emit(commodityKey[word])
+					l.emitSpaces()
+				default:
+					return l.errorf("unexpected commodity directive '%s'", word)
+				}
+			}
+		default:
+			return l.errorf("bad character %#U", r)
+		}
+	}
+	return lexJournal
+
+}
+
+func lexIncludeDirective(l *lexer) stateFn {
+	l.emit(itemInclude)
+	l.emitSpaces()
+	if !l.emitStringToEOL() {
+		l.errorf("missing filename after 'include'")
+		return nil
+	}
+	return lexJournal
+}
+
 func lexPriceDirective(l *lexer) stateFn {
+	if !isSpace(l.peek()) {
+		return l.errorf("directive 'P' must be followed by a space")
+	}
+	l.emit(itemPrice)
+	l.emitSpaces()
+
 	// TODO: parse individual arguments
 	l.emitStringToEOL()
 	return lexJournal
@@ -696,6 +786,14 @@ func debug(text string) {
 	}
 }
 
+func (l *lexer) emitCommodity() bool {
+	if !l.scanCommodity() {
+		return false
+	}
+	l.emit(itemCommodity)
+	return true
+}
+
 func (l *lexer) scanCommodity() bool {
 	quotesOpen := false
 	for {
@@ -719,6 +817,8 @@ func (l *lexer) scanCommodity() bool {
 		case isEndOfLine(r) || r == eof:
 			l.backup()
 			return true
+		default:
+			// absorb
 		}
 	}
 }
@@ -838,7 +938,7 @@ func (l *lexer) scanQuantity() bool {
 
 func (l *lexer) atTerminator() bool {
 	r := l.peek()
-	if isSpace(r) || isEndOfLine(r) {
+	if isSpace(r) || isEndOfLine(r) || r == eof {
 		return true
 	}
 	return false
@@ -873,4 +973,9 @@ func isEndOfLine(r rune) bool {
 // isAlphaNumeric reports whether r is an alphabetic, digit, or underscore.
 func isAlphaNumeric(r rune) bool {
 	return r == '_' || unicode.IsLetter(r) || unicode.IsDigit(r)
+}
+
+// isAlphaUnderscore reports whether r is an alphabetic or underscore.
+func isAlphaUnderscore(r rune) bool {
+	return r == '_' || unicode.IsLetter(r)
 }

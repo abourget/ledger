@@ -144,6 +144,42 @@ var lexTests = []lexTest{
 		{itemString, 0, "2017/06/15 USD 50.00 CAD"},
 		tEOF,
 	}},
+	{"commodity directive simple", `commodity $`, []item{
+		{itemCommodityDirective, 0, "commodity"},
+		{itemSpace, 0, " "},
+		{itemCommodity, 0, "$"},
+		tEOF,
+	}},
+	{"commodity directive with subdirectives", "commodity $\n  nomarket\n  alias USD\n  default \n  format $1,000.00\n  note US Dollar  \n\n", []item{
+		{itemCommodityDirective, 0, "commodity"},
+		{itemSpace, 0, " "},
+		{itemCommodity, 0, "$"},
+		tEOL,
+		{itemSpace, 0, "  "},
+		{itemCommodityNomarket, 0, "nomarket"},
+		tEOL,
+		{itemSpace, 0, "  "},
+		{itemCommodityAlias, 0, "alias"},
+		{itemSpace, 0, " "},
+		{itemCommodity, 0, "USD"},
+		tEOL,
+		{itemSpace, 0, "  "},
+		{itemCommodityDefault, 0, "default"},
+		{itemSpace, 0, " "},
+		tEOL,
+		{itemSpace, 0, "  "},
+		{itemCommodityFormat, 0, "format"},
+		{itemSpace, 0, " "},
+		{itemString, 0, "$1,000.00"},
+		tEOL,
+		{itemSpace, 0, "  "},
+		{itemCommodityNote, 0, "note"},
+		{itemSpace, 0, " "},
+		{itemString, 0, "US Dollar  "},
+		tEOL,
+		tEOL,
+		tEOF,
+	}},
 
 	// errors
 
@@ -164,6 +200,14 @@ var lexTests = []lexTest{
 	{"erroneous short date", "2016/09", []item{
 		{itemError, 0, "date format error, expects YYYY-MM-DD with '/', '-' or '.' as separators, received character U+FFFFFFFFFFFFFFFF"},
 	}},
+	{"commodity unknown", "commodity A\n  bob", []item{
+		{itemCommodityDirective, 0, "commodity"},
+		{itemSpace, 0, " "},
+		{itemCommodity, 0, "A"},
+		tEOL,
+		{itemSpace, 0, "  "},
+		{itemError, 0, "unexpected commodity directive 'bob'"},
+	}},
 }
 
 func TestLex(t *testing.T) {
@@ -171,10 +215,12 @@ func TestLex(t *testing.T) {
 		// if test.name != "less simple transaction" {
 		// 	continue
 		// }
-		items := collect(&test)
-		if !equal(items, test.items, false) {
-			t.Errorf("test %q: got\n\t%+v\nexpected\n\t%v", test.name, items, test.items)
-		}
+		t.Run(test.name, func(t *testing.T) {
+			items := collect(&test)
+			if !equal(items, test.items, false) {
+				t.Errorf("got\n\t%+v\nexpected\n\t%v", items, test.items)
+			}
+		})
 	}
 }
 

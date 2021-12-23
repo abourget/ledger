@@ -70,6 +70,9 @@ func (t *Tree) Parse() (err error) {
 			x := t.newXact(it.pos)
 			x.Date = txDate
 			t.parseXact(x)
+		case itemCommodityDirective:
+			d := t.newCommodity(it.pos)
+			t.parseCommodityDirective(d)
 		case itemInclude:
 			d := t.newDirective(it.pos, "include")
 			d.Raw = d.Directive + t.eatSpaces()
@@ -89,7 +92,7 @@ func (t *Tree) Parse() (err error) {
 			d.Raw += it.val
 			d.Args = it.val
 		default:
-			t.errorf("unsupported top-level directive")
+			t.errorf("unsupported top-level directive %s", it)
 		}
 	}
 	return nil
@@ -171,6 +174,52 @@ func (t *Tree) parseXact(x *XactNode) {
 	}
 
 	t.parsePostings(x)
+}
+
+func (t *Tree) parseCommodityDirective(c *CommodityNode) {
+	it := t.nextNonSpace()
+	if it.typ != itemCommodity {
+		t.errorf("expecting a commodity as string after 'commodity'")
+	}
+	c.Commodity = it.val
+
+	for {
+		switch it := t.next(); it.typ {
+		case itemSpace:
+		case itemEOL:
+		case itemEOF:
+			t.backup()
+			return
+		case itemCommodityNote:
+			it := t.nextNonSpace()
+			if it.typ != itemString {
+				t.errorf("expecting string after 'note'")
+			}
+			c.Note = it.val
+		case itemCommodityFormat:
+			it := t.nextNonSpace()
+			if it.typ != itemString {
+				t.errorf("expecting string after 'format'")
+			}
+			if !strings.Contains(it.val, c.Commodity) {
+				t.errorf("format '%s' should contain the commodity '%s' before or after the formated amount", it.val, c.Commodity)
+			}
+			c.Format = it.val
+		case itemCommodityNomarket:
+			c.NoMarket = true
+		case itemCommodityAlias:
+			it := t.nextNonSpace()
+			if it.typ != itemCommodity {
+				t.errorf("expecting commodity as string after 'alias'")
+			}
+			c.Alias = it.val
+		case itemCommodityDefault:
+			c.Default = true
+		default:
+			t.backup()
+			return
+		}
+	}
 }
 
 func (t *Tree) parsePostings(x *XactNode) {

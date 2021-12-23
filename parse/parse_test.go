@@ -2,7 +2,7 @@ package parse
 
 import (
 	"encoding/json"
-	"os"
+	"fmt"
 	"testing"
 	"time"
 
@@ -94,7 +94,7 @@ func TestParseEdgeCases(t *testing.T) {
 2016/10/10 Desc 3
   A  $-12
   B  $.34
-  CWithTrailingSpaces     
+  CWithTrailingSpaces
 `)
 	err := tree.Parse()
 	require.NoError(t, err)
@@ -171,5 +171,37 @@ func TestParseErrors(t *testing.T) {
 
 func treeToJSON(t *Tree) {
 	a, _ := json.MarshalIndent(t.Root, "", "  ")
-	os.Stdout.Write(a)
+	fmt.Println(string(a))
+}
+
+func TestParseCommodity(t *testing.T) {
+	tree := New("file.ledger", `
+commodity $
+  note American Dollar
+  format $1,000.00
+  nomarket
+  alias USD
+  default
+
+`)
+	err := tree.Parse()
+	require.NoError(t, err)
+
+	//treeToJSON(tree)
+
+	assert.Len(t, tree.Root.Nodes, 2)
+
+	spc, ok := tree.Root.Nodes[0].(*SpaceNode)
+	require.True(t, ok)
+	assert.Equal(t, "\n", spc.Space)
+
+	comm, ok := tree.Root.Nodes[1].(*CommodityNode)
+	require.True(t, ok)
+	assert.Equal(t, "$", comm.Commodity)
+	assert.Equal(t, "American Dollar", comm.Note)
+	assert.Equal(t, "$1,000.00", comm.Format)
+	assert.Equal(t, "USD", comm.Alias)
+	assert.True(t, comm.NoMarket)
+	assert.True(t, comm.Default)
+
 }
