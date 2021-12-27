@@ -330,9 +330,9 @@ type CommodityNode struct {
 
 	Commodity string
 	Note      string
+	Alias     string
 	Format    string
 	NoMarket  bool
-	Alias     string
 	Default   bool
 }
 

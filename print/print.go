@@ -35,6 +35,7 @@ func (p *Printer) Print(buf *bytes.Buffer) error {
 
 	for _, nodeIface := range tree.Root.Nodes {
 		var err error
+		fmt.Printf("MAMA %T\n", nodeIface)
 		switch node := nodeIface.(type) {
 		case *parse.XactNode:
 			p.writePlainXact(buf, node)
@@ -44,6 +45,8 @@ func (p *Printer) Print(buf *bytes.Buffer) error {
 			_, err = buf.WriteString(node.Space)
 		case *parse.DirectiveNode:
 			_, err = buf.WriteString(node.Raw)
+		case *parse.CommodityNode:
+			p.writeCommodity(buf, node)
 		default:
 			return fmt.Errorf("unprintable node type %T", nodeIface)
 		}

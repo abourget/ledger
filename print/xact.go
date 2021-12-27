@@ -109,6 +109,27 @@ func amount(amount *parse.AmountNode) (out string) {
 	return out
 }
 
+func (p *Printer) writeCommodity(b *bytes.Buffer, x *parse.CommodityNode) {
+	b.WriteString("commodity ")
+	b.WriteString(x.Commodity)
+	b.WriteString("\n")
+	if x.Note != "" {
+		b.WriteString("  note " + x.Note + "\n")
+	}
+	if x.Alias != "" {
+		b.WriteString("  alias " + x.Alias + "\n")
+	}
+	if x.Format != "" {
+		b.WriteString("  format " + x.Format + "\n")
+	}
+	if x.NoMarket {
+		b.WriteString("  nomarket\n")
+	}
+	if x.Default {
+		b.WriteString("  default\n")
+	}
+}
+
 func (p *Printer) writePlainXact(b *bytes.Buffer, x *parse.XactNode) {
 	b.WriteString(toDate(x.Date))
 	if !x.EffectiveDate.IsZero() {

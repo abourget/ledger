@@ -189,7 +189,7 @@ commodity $
 
 	//treeToJSON(tree)
 
-	assert.Len(t, tree.Root.Nodes, 2)
+	assert.Len(t, tree.Root.Nodes, 3)
 
 	spc, ok := tree.Root.Nodes[0].(*SpaceNode)
 	require.True(t, ok)
@@ -204,4 +204,7 @@ commodity $
 	assert.True(t, comm.NoMarket)
 	assert.True(t, comm.Default)
 
+	spc, ok = tree.Root.Nodes[2].(*SpaceNode)
+	require.True(t, ok)
+	assert.Equal(t, "\n", spc.Space)
 }

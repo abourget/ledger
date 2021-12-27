@@ -183,10 +183,18 @@ func (t *Tree) parseCommodityDirective(c *CommodityNode) {
 	}
 	c.Commodity = it.val
 
+	var followsEOL bool
+
 	for {
 		switch it := t.next(); it.typ {
 		case itemSpace:
+			followsEOL = false
 		case itemEOL:
+ 			if followsEOL {
+				t.backup()
+				return
+			}
+			followsEOL = true
 		case itemEOF:
 			t.backup()
 			return
